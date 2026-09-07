@@ -82,10 +82,12 @@ def simulate_trades(symbol, start_date="2024-01-01", end_date="2026-09-01"):
             exit_reason = None
             exit_price = None
 
+            disable_tp = params.get('disable_tp', False)
+
             if price <= effective_stop:
                 exit_reason = 'trailing_stop' if trade['trailing_stop'] > trade['stop_loss'] else 'stop_loss'
                 exit_price = effective_stop
-            elif price >= trade['take_profit']:
+            elif not disable_tp and trade['take_profit'] > 0 and price >= trade['take_profit']:
                 exit_reason = 'take_profit'
                 exit_price = trade['take_profit']
             elif rsi > rsi_extreme:
