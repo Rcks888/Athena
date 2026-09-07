@@ -23,6 +23,7 @@ def simulate_trades(symbol, start_date="2024-01-01", end_date="2026-09-01"):
         return []
 
     df = add_indicators(df)
+    df = df.sort_index()
     df = df.loc[start_date:end_date]
     if len(df) < 50:
         return []
