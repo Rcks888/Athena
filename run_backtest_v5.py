@@ -152,12 +152,11 @@ def main():
 
     # Save
     import pandas as pd
-    pd.DataFrame(t1).to_csv(RESULTS_DIR / "backtest_v5_realistic.csv", index=False)
-    pd.DataFrame(h1).to_csv(RESULTS_DIR / "backtest_v5_portfolio.csv", index=False)
-    pd.DataFrame(t2).to_csv(RESULTS_DIR / "backtest_v5_midcap.csv", index=False)
+    save_dir = Path("results")
+    pd.DataFrame(t1).to_csv(save_dir / "backtest_v5_realistic.csv", index=False)
+    pd.DataFrame(h1).to_csv(save_dir / "backtest_v5_portfolio.csv", index=False)
+    pd.DataFrame(t2).to_csv(save_dir / "backtest_v5_midcap.csv", index=False)
     print(f"\n  Saved to results/backtest_v5_*.csv")
-
-    RESULTS_DIR = Path("results")
 
 if __name__ == "__main__":
     main()
