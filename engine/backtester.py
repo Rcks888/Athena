@@ -145,20 +145,21 @@ def _check_entry(row, prev, symbol, params):
         if confluence >= min_confluence and trigger:
             return {'strategy': 'momentum_breakout', 'trigger': trigger, 'confluence': confluence}
 
-        confluence = 0
-        trigger = None
-        if hidden_bull_div:
-            confluence += 1
-            trigger = 'hidden_bullish_div'
-        if 40 <= rsi <= 50:
-            confluence += 1
-            if not trigger:
-                trigger = 'pullback_buy'
-        if macd_hist > 0:
-            confluence += 1
+        if not params.get('disable_trend_continuation', False):
+            confluence = 0
+            trigger = None
+            if hidden_bull_div:
+                confluence += 1
+                trigger = 'hidden_bullish_div'
+            if 40 <= rsi <= 50:
+                confluence += 1
+                if not trigger:
+                    trigger = 'pullback_buy'
+            if macd_hist > 0:
+                confluence += 1
 
-        if confluence >= min_confluence and trigger:
-            return {'strategy': 'trend_continuation', 'trigger': trigger, 'confluence': confluence}
+            if confluence >= min_confluence and trigger:
+                return {'strategy': 'trend_continuation', 'trigger': trigger, 'confluence': confluence}
 
     elif regime == 'range':
         confluence = 0
