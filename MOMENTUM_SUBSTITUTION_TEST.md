@@ -62,6 +62,36 @@ single slot study on this is weak.** That is a judgement for you, not for this s
 
 ---
 
+## Re-reported under the CORRECTED alpha gate (Option A)
+
+Added 2026-09-22 after external review. **Both verdicts are retained side by side in
+`results/momentum_substitution_test.json` and neither overwrites the other**, because
+the fact on record is that the same data yields opposite verdicts under the two rules,
+and the first rule was misspecified.
+
+The original gate asked *"is alpha significantly negative?"* and read
+failure-to-reject as "not harmful". Under low power that converts noise into
+permission: **−7.27%/yr is economically decisive and statistically invisible** at
+n=59 with ~2.5 trades a month. Option A puts magnitude first — annualised α ≤
+**−3%/yr** is adverse regardless of p-value, CI reported, no significance requirement.
+
+| Universe / proxy | α annualised | α 95% CI | α p | Originally registered | **Option A (corrected)** |
+|---|---|---|---|---|---|
+| **A / MTUM** *(primary)* | **−7.27%** | [−17.50%, +4.10%] | 0.197 | POSSIBLE_IDIOSYNCRATIC | **ADVERSE** |
+| A / QQQ−SPY | −4.17% | [−16.26%, +9.49%] | 0.526 | POSSIBLE_IDIOSYNCRATIC | **ADVERSE** |
+| B / MTUM | −20.93% | [−34.63%, −4.64%] | 0.0147 | INCONCLUSIVE | **ADVERSE** |
+| B / QQQ−SPY | −17.57% | [−33.00%, +1.05%] | 0.063 | POSSIBLE_IDIOSYNCRATIC | **ADVERSE** |
+
+**All four are adverse under Option A.** The primary cell flips from
+`POSSIBLE_IDIOSYNCRATIC` to `ADVERSE` on the same numbers. Three of the four passed
+the original gate purely because a wide confidence interval crossed zero — the
+interval being wide is the *reason* for caution, not grounds for a pass.
+
+The standing principle now recorded: **economic magnitude first, significance second,
+and low power never reads as absolution.**
+
+---
+
 ## Method, exactly as registered
 
 - **Strategy returns** from `results/v6_runA2_*_equity.csv`, month-end equity.

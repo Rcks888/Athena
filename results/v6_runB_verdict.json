@@ -1,0 +1,166 @@
+{
+  "run": "B_causal_divergence",
+  "registered": "Ares/ROADMAP.md 2026-09-22, before execution",
+  "rule": {
+    "success_alpha_ann_pct_min": -2.0,
+    "success_net_excess_pct_min": 0.0,
+    "primary_universe": "A_original_130",
+    "primary_proxy": "MTUM"
+  },
+  "primary": {
+    "universe": "A_original_130",
+    "n_months": 59,
+    "alpha_ann_pct": -16.055394604744677,
+    "alpha_ann_ci95": [
+      -25.42985694930605,
+      -5.611720679875198
+    ],
+    "alpha_p": 0.004045040695531021,
+    "beta": 0.3564264999949345,
+    "r_squared": 0.2556450179453106,
+    "beta_on_deployed": 0.49506939818136053,
+    "raw_total_return_pct": -43.64,
+    "mean_exposure": 0.7199525991795669,
+    "net_return_on_deployed_pct": -60.615101674375005,
+    "spy_total_return_pct": 85.55177416794773,
+    "net_excess_vs_spy_on_deployed_pct": -146.16687584232272,
+    "gross_pnl_before_commission": 8.27,
+    "commission_total": 424.0,
+    "net_pnl": -415.73,
+    "idle_cash": {
+      "total_interest": 26.852940257679762,
+      "mean_idle_cash": 213.90890410958906,
+      "min_idle_cash": 1.39,
+      "bil_total_return_pct": 19.334422538578643,
+      "days": 1241
+    },
+    "net_pnl_plus_tbill": -388.8770597423203
+  },
+  "condition_alpha_pass": false,
+  "condition_net_excess_pass": false,
+  "verdict": "FAILURE",
+  "verdict_option_a": "ADVERSE",
+  "comparable_to_run_a_prime": false,
+  "comparability_note": "Run B is a new sample. Only the pre-registered primary metrics are compared, and only against the fixed thresholds.",
+  "run_b": {
+    "A_original_130": {
+      "universe": "A_original_130",
+      "n_months": 59,
+      "alpha_ann_pct": -16.055394604744677,
+      "alpha_ann_ci95": [
+        -25.42985694930605,
+        -5.611720679875198
+      ],
+      "alpha_p": 0.004045040695531021,
+      "beta": 0.3564264999949345,
+      "r_squared": 0.2556450179453106,
+      "beta_on_deployed": 0.49506939818136053,
+      "raw_total_return_pct": -43.64,
+      "mean_exposure": 0.7199525991795669,
+      "net_return_on_deployed_pct": -60.615101674375005,
+      "spy_total_return_pct": 85.55177416794773,
+      "net_excess_vs_spy_on_deployed_pct": -146.16687584232272,
+      "gross_pnl_before_commission": 8.27,
+      "commission_total": 424.0,
+      "net_pnl": -415.73,
+      "idle_cash": {
+        "total_interest": 26.852940257679762,
+        "mean_idle_cash": 213.90890410958906,
+        "min_idle_cash": 1.39,
+        "bil_total_return_pct": 19.334422538578643,
+        "days": 1241
+      },
+      "net_pnl_plus_tbill": -388.8770597423203
+    },
+    "B_midcap_98": {
+      "universe": "B_midcap_98",
+      "n_months": 59,
+      "alpha_ann_pct": -27.4043823025523,
+      "alpha_ann_ci95": [
+        -40.134921949779454,
+        -12.234656886919604
+      ],
+      "alpha_p": 0.001243654868011923,
+      "beta": 0.36196451567285076,
+      "r_squared": 0.12105290689483039,
+      "beta_on_deployed": 0.6226293579998515,
+      "raw_total_return_pct": -73.73,
+      "mean_exposure": 0.5813482949722025,
+      "net_return_on_deployed_pct": -126.8258643530131,
+      "spy_total_return_pct": 85.55177416794773,
+      "net_excess_vs_spy_on_deployed_pct": -212.37763852096083,
+      "gross_pnl_before_commission": -317.31,
+      "commission_total": 407.0,
+      "net_pnl": -724.31,
+      "idle_cash": {
+        "total_interest": 37.56753250673777,
+        "mean_idle_cash": 280.38637389202256,
+        "min_idle_cash": 2.12,
+        "bil_total_return_pct": 19.334422538578643,
+        "days": 1241
+      },
+      "net_pnl_plus_tbill": -686.7424674932622
+    }
+  },
+  "run_a_prime": {
+    "A_original_130": {
+      "universe": "A_original_130",
+      "n_months": 59,
+      "alpha_ann_pct": -7.27131717742211,
+      "alpha_ann_ci95": [
+        -17.49631257780735,
+        4.103554496373851
+      ],
+      "alpha_p": 0.19737632252984616,
+      "beta": 0.3910263345874128,
+      "r_squared": 0.29457798273443625,
+      "beta_on_deployed": 0.6109108812996424,
+      "raw_total_return_pct": -5.58,
+      "mean_exposure": 0.6400709932609964,
+      "net_return_on_deployed_pct": -8.71778296274815,
+      "spy_total_return_pct": 85.55177416794773,
+      "net_excess_vs_spy_on_deployed_pct": -94.26955713069587,
+      "gross_pnl_before_commission": 273.21,
+      "commission_total": 331.0,
+      "net_pnl": -57.79,
+      "idle_cash": {
+        "total_interest": 50.144961767616465,
+        "mean_idle_cash": 330.1451490733279,
+        "min_idle_cash": 10.2,
+        "bil_total_return_pct": 19.334422538578643,
+        "days": 1241
+      },
+      "net_pnl_plus_tbill": -7.645038232383534
+    },
+    "B_midcap_98": {
+      "universe": "B_midcap_98",
+      "n_months": 59,
+      "alpha_ann_pct": -20.928532274983226,
+      "alpha_ann_ci95": [
+        -34.6296310468191,
+        -4.639461472716732
+      ],
+      "alpha_p": 0.01473635456223965,
+      "beta": 0.4709551296661195,
+      "r_squared": 0.19090862645210127,
+      "beta_on_deployed": 0.8069013180478445,
+      "raw_total_return_pct": -57.32,
+      "mean_exposure": 0.5836588925217181,
+      "net_return_on_deployed_pct": -98.20804708782383,
+      "spy_total_return_pct": 85.55177416794773,
+      "net_excess_vs_spy_on_deployed_pct": -183.75982125577156,
+      "gross_pnl_before_commission": -269.85,
+      "commission_total": 326.0,
+      "net_pnl": -595.85,
+      "idle_cash": {
+        "total_interest": 35.656414859144036,
+        "mean_idle_cash": 258.6837066881547,
+        "min_idle_cash": 0.14,
+        "bil_total_return_pct": 19.334422538578643,
+        "days": 1241
+      },
+      "net_pnl_plus_tbill": -560.1935851408559
+    }
+  },
+  "no_continuation_case": true
+}

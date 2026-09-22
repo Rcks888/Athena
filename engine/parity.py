@@ -47,6 +47,57 @@ LIVE_SIGNALS_MD5 = "da2ba2596cf43f6405dfd4521824c33d"
 # Where live lives, for the operator-facing message. Athena must never write here.
 ARES_SIGNALS_HINT = "~/Olympus/Ares/engine/signals.py"
 
+# ---------------------------------------------------------------------------
+# DECLARED, SCOPED DIVERGENCE from live — engine/indicators.py
+#
+# This file is NOT byte-identical to Ares' and is not required to be. The
+# divergence detectors were deliberately rewritten (must-fix 1): live's pivot loop
+# writes its flag back onto the PIVOT bar, which is the original look-ahead defect,
+# and stops at `len - window - 1` while live reads `len - 1`, which is why all four
+# columns are permanently False in production. Athena's version writes the flag at
+# the CONFIRMATION bar, `max(price_pivot, rsi_pivot) + window`.
+#
+# Scope of the divergence, deliberately narrow:
+#   - four copy-pasted detectors collapsed into one `_scan_divergence`
+#   - flag written at the confirmation bar instead of back-dated to the pivot
+#   - `SWING_WINDOW` named rather than repeated as a literal 5
+#   - `load_params` resolves the ACTIVE config instead of a hardcoded filename
+# Unchanged: lookback 21, pivot window 5, RSI pivot matching tolerance 3, every
+# indicator formula, and `detect_market_regime`.
+#
+# Recorded rather than silenced. Run A' MASKS all four columns to False so the
+# repaired detector cannot fire, reproducing production exactly. Run B un-masks them,
+# and is therefore the ONLY configuration in which this divergence is active — which
+# is precisely the concept-versus-defect question Run B exists to answer.
+# ---------------------------------------------------------------------------
+LIVE_INDICATORS_MD5 = "f2cf8af87476b03b5c27e220de5abcec"
+ATHENA_INDICATORS_MD5 = "d4db2c84185279a4c442b22b7a83441b"
+
+INDICATORS_DIVERGENCE_DECLARED = (
+    "engine/indicators.py intentionally differs from live: divergence flags are "
+    "written at the confirmation bar rather than back-dated onto the pivot bar "
+    "(must-fix 1). Live's back-dating is the original look-ahead defect and also "
+    "why all four columns are permanently False in production. Lookback, pivot "
+    "window, RSI tolerance and every formula are unchanged."
+)
+
+def indicators_divergence_status():
+    """Report the indicators divergence without failing on it.
+
+    A checksum assertion here would be wrong: the divergence is intended. What must
+    not happen is the divergence going UNRECORDED, or Athena's own copy drifting
+    further without anyone noticing, so both hashes are pinned and reported.
+    """
+    path = ENGINE_DIR / "indicators.py"
+    actual = _md5(path)
+    return {
+        'athena_md5': actual,
+        'athena_md5_matches_record': actual == ATHENA_INDICATORS_MD5,
+        'live_md5_at_record_time': LIVE_INDICATORS_MD5,
+        'byte_identical_to_live': False,
+        'declared': INDICATORS_DIVERGENCE_DECLARED,
+    }
+
 class ParityDrift(Exception):
     """Raised when vendored strategy code no longer matches what was recorded."""
 

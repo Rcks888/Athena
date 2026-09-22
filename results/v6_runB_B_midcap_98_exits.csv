@@ -1,0 +1,6 @@
+exit_reason,trades,total_pnl,avg_pnl,avg_pnl_pct,win_rate_pct,pct_of_gross_flow
+bearish_divergence,27,219.906,8.145,5.43,81.5,9.0
+mean_reversion_complete,4,82.198,20.549,13.7,100.0,3.4
+emotional_extreme,2,50.606,25.303,16.869,100.0,2.1
+trailing_stop,71,35.753,0.504,0.336,38.0,1.5
+stop_loss,83,-1112.774,-13.407,-8.938,1.2,45.7

@@ -123,6 +123,12 @@ def ols(y, x, xname):
         'alpha_annualised_pct': float(((1 + beta_hat[0]) ** 12 - 1) * 100),
         'alpha_se': float(se[0]), 'alpha_t': float(tstat[0]),
         'alpha_p': float(pval[0]),
+        # CI on the ANNUALISED alpha, required by Option A whether or not the
+        # coefficient is significant.
+        'alpha_ann_ci95_low_pct': float(
+            ((1 + beta_hat[0] - stats.t.ppf(0.975, dof) * se[0]) ** 12 - 1) * 100),
+        'alpha_ann_ci95_high_pct': float(
+            ((1 + beta_hat[0] + stats.t.ppf(0.975, dof) * se[0]) ** 12 - 1) * 100),
         'beta': float(beta_hat[1]), 'beta_se': float(se[1]),
         'beta_t': float(tstat[1]), 'beta_p': float(pval[1]),
         'r_squared': float(r2),
@@ -165,6 +171,38 @@ def bootstrap_r2(y, x, n_boot=10000, seed=20260922):
         'p_r2_above_0p5': float((out > R2_MOMENTUM_BETA).mean()),
         'n_boot': int(len(out)),
     }
+
+# ---------------------------------------------------------------------------
+# CORRECTED ALPHA CONDITION — Option A, ROADMAP.md "binding on all future
+# pre-registration". An economic threshold, deliberately independent of p-value.
+#
+# The originally registered gate asked "is alpha SIGNIFICANTLY negative?" and read
+# failure-to-reject as "not harmful". Under low power that converts noise into
+# permission: -7.27%/yr is economically decisive and statistically invisible at n=59
+# with ~2.5 trades a month, so it passed a test it should have failed. The corrected
+# rule puts magnitude first and significance second, and low power never reads as
+# absolution.
+#
+# Both verdicts are emitted. The original is NOT deleted or overwritten, because the
+# fact on record is that the same data yields opposite verdicts under the two rules
+# and the first rule was wrong.
+# ---------------------------------------------------------------------------
+OPTION_A_ADVERSE_THRESHOLD_ANN_PCT = -3.0
+
+def verdict_option_a(alpha_ann_pct, ci_low_ann_pct, ci_high_ann_pct):
+    """Option A: annualised alpha <= -3%/yr is ADVERSE regardless of p-value."""
+    if alpha_ann_pct <= OPTION_A_ADVERSE_THRESHOLD_ANN_PCT:
+        return ('ADVERSE',
+                f"Annualised alpha {alpha_ann_pct:+.2f}%/yr is at or below the "
+                f"{OPTION_A_ADVERSE_THRESHOLD_ANN_PCT:+.0f}%/yr economic threshold. "
+                f"ADVERSE regardless of p-value; 95% CI "
+                f"[{ci_low_ann_pct:+.2f}%, {ci_high_ann_pct:+.2f}%]. Statistical "
+                f"insignificance at this sample size is low power, not absolution.")
+    return ('NOT_ADVERSE_BY_OPTION_A',
+            f"Annualised alpha {alpha_ann_pct:+.2f}%/yr is above the "
+            f"{OPTION_A_ADVERSE_THRESHOLD_ANN_PCT:+.0f}%/yr threshold; 95% CI "
+            f"[{ci_low_ann_pct:+.2f}%, {ci_high_ann_pct:+.2f}%]. Not adverse under "
+            f"Option A. This is not a positive finding.")
 
 def verdict(r2, alpha, alpha_p):
     """The registered decision rule. No branch depends on the observed values
@@ -312,9 +350,23 @@ def main():
             r.update(bootstrap_r2(y.values, xs.values))
             v, why = verdict(r['r_squared'], r['alpha_monthly'], r['alpha_p'])
             r['verdict'] = v
+            r['verdict_rule'] = ('originally registered: R2 bands + alpha '
+                                 'significance')
             r['threshold_margin'] = float(min(abs(r['r_squared'] - R2_IDIOSYNCRATIC),
                                               abs(r['r_squared'] - R2_MOMENTUM_BETA)))
             r['verdict_fragile'] = bool(r['threshold_margin'] < 0.05)
+            va, whya = verdict_option_a(r['alpha_annualised_pct'],
+                                        r['alpha_ann_ci95_low_pct'],
+                                        r['alpha_ann_ci95_high_pct'])
+            r['verdict_option_a'] = va
+            r['verdict_option_a_detail'] = whya
+            r['verdict_option_a_rule'] = (
+                f"corrected: annualised alpha <= "
+                f"{OPTION_A_ADVERSE_THRESHOLD_ANN_PCT:+.0f}%/yr is adverse, "
+                f"p-value irrelevant")
+            r['verdicts_disagree'] = bool(
+                (va == 'ADVERSE') != (v in ('INCONCLUSIVE',)))
+            r['is_primary'] = bool(uni == 'A_original_130' and key == 'mtum')
             r['verdict_detail'] = why
             r['beta_on_deployed_capital'] = (
                 r['beta'] / expo['mean_exposure'] if expo['mean_exposure'] else None)
@@ -339,8 +391,14 @@ def main():
                   f"{r['r2_ci95_high']:.3f}]  "
                   f"P(R2>0.3)={r['p_r2_above_0p3']:.2f}, "
                   f"P(R2>0.5)={r['p_r2_above_0p5']:.2f}  (disclosure only)")
-            print(f"    VERDICT            {v}")
+            print(f"    alpha annualised 95% CI "
+                  f"[{r['alpha_ann_ci95_low_pct']:+.2f}%, "
+                  f"{r['alpha_ann_ci95_high_pct']:+.2f}%]")
+            print(f"    VERDICT (as originally registered)  {v}")
             print(f"      {why}")
+            print(f"    VERDICT (Option A, corrected)       {va}"
+                  f"{'   <-- PRIMARY' if r['is_primary'] else ''}")
+            print(f"      {whya}")
             if r['verdict_fragile']:
                 print(f"    *** BOUNDARY WARNING: R2 is {r['threshold_margin']:.4f} "
                       f"from a decision threshold. The registered rule returns the "

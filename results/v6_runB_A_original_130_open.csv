@@ -1,0 +1,4 @@
+symbol,strategy,entry_date,entry_price,shares,mark_price,market_value,cost_basis,scaled_out,scale_out_proceeds,unrealised_pnl,stdev_fallback
+MRK,momentum_breakout,2026-08-20,150.045092,0.99303481,148.980606,147.94,150.0,False,0.0,-2.06,False
+FTNT,momentum_breakout,2026-08-28,172.752582,0.8625052,161.850006,139.6,150.0,False,0.0,-10.4,False
+SLB,momentum_breakout,2026-09-01,59.749977,2.49372481,56.855,141.78,150.0,False,0.0,-8.22,False
