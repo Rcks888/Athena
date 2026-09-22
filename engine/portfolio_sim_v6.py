@@ -1,47 +1,50 @@
-"""Athena V6 — the first causal portfolio simulator.
+"""Athena V6 Run A' — the first simulator that runs live Ares' own strategy code.
 
-This is a new engine, not a patched V5. `backtester.py`, `portfolio_sim.py` and
-`portfolio_sim_v5.py` are left logically untouched as the historical record of
-what actually produced V1-V5, and their runners now refuse to execute.
+What changed from Run A, and why it is a restructure rather than a patch
+-----------------------------------------------------------------------
+Run A (committed, `results/v6_runA_*`) was causal but measured a **hand-written
+parallel implementation** of the strategy. A parity audit found ~30 divergences
+from live and one look-ahead introduced by the reimplementation itself. The defect
+was structural: this module re-expressed the entry rules instead of calling them,
+and `engine/signals.py` sat beside it as a stale near-copy that nothing imported.
 
-Every must-fix from the 2026-09-22 audit is applied here:
+Run A' therefore **calls live's predicates** through `engine/live_adapter.py`
+against a byte-identical vendored `engine/signals.py`, checksum-guarded by
+`engine/parity.py`. Entry logic is no longer expressed here at all.
 
-1. Causal swing confirmation — in `indicators.py`. Divergence flags are stamped
-   at the confirmation bar, never back-dated. Run A additionally removes
-   divergence from the decision set entirely (see `_check_entry`).
-2. No exit is ever booked at the stop price. V1-V5 filled stop exits at exactly
-   `effective_stop`, a price the market need not have traded. Exits here fill at
-   the NEXT bar's open, so an unreachable limit price cannot be assumed.
-3. Correct `hidden_bull_div` / `hidden_bear_div` key names. V1-V5 read
-   `hidden_bullish_div` / `hidden_bearish_div`, which `add_indicators` never
-   produced, so the confluence gate was inoperative and `min_confluence` never
-   bound.
-4. Max drawdown from the RUNNING peak, not from the global peak only.
-5. `peak_after_exit` / `missed_upside_pct` are not computed at all. They are
-   forward-looking by construction; the only way to guarantee they never touch
-   parameter selection is for them not to exist.
-6. Stop distance from the stdev of RETURNS, matching live Ares exactly:
-   `entry_price - entry_price * stdev_20 * stop_loss_multiplier`. V1-V5 used
-   `Close.std()` of dollar price levels, a live-vs-backtest mismatch independent
-   of the look-ahead. There is also no fabricated `Close * 0.05` volatility
-   fallback: a missing stdev is an absence, so the entry is refused and counted.
-7. Exits are next-bar, like entries. V5 filled entries at the next open but every
-   exit at the signal day's close — one-sided hindsight on every exit.
+The four that move the number, all now taken from live
+-----------------------------------------------------
+1. **Position sizing is static and non-compounding.** Live `tracker.py:123` is
+   `(starting_capital * (1 - cash_reserve_pct) / max_positions) - commission`
+   = **$149**, fixed for the whole run, and live tracks no cash at all. Run A used
+   `min(cash - equity*0.25, equity*0.20)`, which compounds — positions started
+   ~33% larger and grew with the equity curve. **Run A's CAGR came from sizing
+   Ares does not use, so the two runs' headline returns are not comparable.**
+2. **Queue promotion does not re-require the signal.** Live `_validate_queued`
+   promotes on drift alone (see `REPRODUCED_LIVE_DEFECTS below); Run A demanded a
+   full fresh signal on the promotion bar, so ~2,900 signals that live would have
+   promoted expired unentered.
+3. **Scale-out is checked BEFORE exits, and short-circuits them.** Live
+   `tracker.py:814-839` banks 50% at the target and then `continue`s, so no exit
+   can fire on a target bar. Run A checked exits first, letting an
+   `emotional_extreme` (rsi > 90, common exactly at the target) liquidate the whole
+   position where live keeps half and rides it. This hit winners specifically.
+4. **A missing `stdev_20` fills, it does not refuse.** Live `tracker.py:136`
+   substitutes `0.05`, marks the trade contaminated, and fills. Run A refused,
+   excluding a class of wide-stop trades that live's real population contains. The
+   contamination flag is carried through to the output so they can be segmented.
 
-Accounting defects from the same audit are fixed and then *enforced*:
+Also fixed here: **a look-ahead of Run A's own making.** `:300` sized the position
+from today's Close for an order filling at today's Open. Static sizing removes the
+equity read entirely, so the defect cannot recur by construction, and
+`validate_v6.py` now has a perturbation test that would catch its return.
 
-- `total_invested` includes the entry commission, and `total_returned` is net of
-  every commission paid. V5 charged cash the $1 entry commission but omitted it
-  from `total_invested`, and added back GROSS scale-out proceeds while the
-  commission had already left cash — so reported P&L beat the real cash result on
-  every trade, and on scaled winners twice.
-- The scale-out leg is fully written to the trade record (price, date, shares,
-  proceeds, remaining shares, commission). V1-V5 computed `scale_out_pnl` and
-  `scale_out_date` and never persisted them, which is precisely why the two
-  accounting defects above were undetectable from the output CSVs.
-- `reconcile()` asserts that the sum of reported trade P&L equals the actual cash
-  delta. Any future accounting drift becomes a hard failure rather than a
-  flattering number.
+Preserved from Run A because the audit verified them
+----------------------------------------------------
+The exit chain order, the trailing-stop ratchet and its seeding, the fractional
+`stdev_20` stop formula with its 2.0 multiplier, `rsi_extreme_high 90`,
+`mean_reversion_complete > 70`, must-fixes 1-5 and 7, `reconcile()`, and
+`data_feed`'s flatten-and-raise path. None of those were churned.
 """
 import json
 from datetime import datetime
@@ -50,157 +53,148 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from engine import active_config
 from engine.data_feed import load_universe
 from engine.indicators import add_indicators
+from engine.live_adapter import (
+    assert_frame_contract, evaluate_entry, stdev_at,
+)
 
 RESULTS_DIR = Path(__file__).parent.parent / "results"
-CONFIG_DIR = Path(__file__).parent.parent / "config"
 
-# Columns the simulator reads per bar. Pulled into numpy arrays up front so the
-# hot loop never touches pandas indexing.
-_NUM_COLS = ['Open', 'High', 'Low', 'Close', 'rsi', 'vol_ratio', 'macd_hist',
-             'stdev_20', 'sma_50', 'pct_from_high']
-_BOOL_COLS = ['bullish_div', 'bearish_div', 'hidden_bull_div', 'hidden_bear_div']
+# Live constants that live reads from its own module scope rather than config.
+LIVE_PENDING_MAX_AGE_DAYS = 4      # tracker.py pending lifecycle
+LIVE_MAX_FILL_ATTEMPTS = 3         # tracker.py MAX_FILL_ATTEMPTS
+LIVE_QUEUE_MAX_SIZE = 10           # tracker.py queue_max_size
+LIVE_QUEUE_MAX_DRIFT_PCT = 5.0     # tracker.py queue_max_drift_pct
+LIVE_STDEV_FALLBACK = 0.05         # tracker.py:141
 
-def load_params(name="strategy_params_v6.json"):
-    with open(CONFIG_DIR / name) as f:
-        return json.load(f)
+# Divergence columns. Forced False when the decision set excludes divergence.
+_DIV_COLS = ['bullish_div', 'bearish_div', 'hidden_bull_div', 'hidden_bear_div']
 
-def prepare(symbols, start_date, end_date, min_bars=100):
-    """Load the frozen snapshot, add indicators, slice, and vectorise.
+REPRODUCED_LIVE_DEFECTS = """\
+Defects reproduced deliberately, because Run A' measures the system Ares IS:
 
-    Indicators are computed on the FULL history before slicing, so the warm-up
-    for the 252-bar and 50-bar windows comes from real bars preceding
-    `start_date` rather than from NaN or a fabricated default.
+1. Queue promotion gates are inert. `tracker.py:400,403` read
+   `latest.get('RSI', 50)` and `latest.get('EMA_20', 0)`, but `add_indicators`
+   produces lowercase `rsi` and never produces `EMA_20`. So the RSI check always
+   sees 50 and can never reject, and the EMA20 check always compares against 0 and
+   can never reject. Live promotion is `|drift| <= 5%` and nothing else. This was
+   found while building Run A' and is NOT in the parity audit's list.
+
+2. All four divergence reads are structurally False in production. Live's pivot
+   loop stops at `len - window - 1` while live reads index `len - 1`, so
+   `latest['bearish_div']` and friends can never be True. `indicators.py` is now
+   causal and CAN flag the latest bar, so faithfulness requires forcing those four
+   columns to False — otherwise the backtest would fire an exit live is incapable
+   of firing. That is what `divergence_in_decision_set: false` does.
+
+Neither is fixed here. Fixing live behaviour inside the backtest is exactly how the
+backtest and the live system drifted apart in the first place.
+"""
+
+def load_params(name=None):
+    """Load the active config. `indicators` resolves through the same module."""
+    if name:
+        active_config.set_active(name)
+    return active_config.load()
+
+def static_position_size(params):
+    """Live's sizing: fixed dollar stake, no compounding, no cash awareness.
+
+    `tracker.py:120-124`. Note `starting_capital` is a NOTIONAL used only to derive
+    the stake; live never reduces it, never grows it, and never checks a balance.
+    At the frozen config this is $149.
     """
+    capital = params.get('starting_capital', 1000)
+    reserve = params.get('cash_reserve_pct', 0.25)
+    slots = params.get('max_positions', 5)
+    commission = params.get('commission_per_trade', 1.00)
+    return (capital * (1 - reserve) / slots) - commission
+
+def prepare(symbols, start_date, end_date, params, min_bars=100):
+    """Load the frozen snapshot, add indicators, slice, and validate the contract.
+
+    Frames stay as DataFrames rather than numpy arrays: live's predicates are handed
+    `df.iloc[:i+1]` so they physically cannot read the future. Run A's numpy fast
+    path is what let the two implementations drift, and is where the sizing
+    look-ahead hid.
+
+    Indicators are computed on the FULL history before slicing, so the 252-bar and
+    50-bar warm-ups come from real bars preceding `start_date`.
+    """
+    use_divergence = params.get('divergence_in_decision_set', False)
     raw = load_universe(symbols, min_bars=min_bars)
     prepared = {}
     for symbol, df in raw.items():
         df = add_indicators(df.sort_index())
+        if not use_divergence:
+            # See REPRODUCED_LIVE_DEFECTS item 2. Live cannot see a divergence at
+            # `latest`; a causal detector can, so it must be masked to match.
+            for c in _DIV_COLS:
+                df[c] = False
         df = df.loc[start_date:end_date]
         if len(df) < 50:
             continue
-        cols = {c: df[c].to_numpy(dtype=float) for c in _NUM_COLS if c in df.columns}
-        for c in _BOOL_COLS:
-            cols[c] = (df[c].to_numpy(dtype=bool) if c in df.columns
-                       else np.zeros(len(df), dtype=bool))
-        cols['regime'] = df['regime'].to_numpy(dtype=object)
-        prepared[symbol] = {
-            'dates': list(df.index),
-            'idx': {d: i for i, d in enumerate(df.index)},
-            'n': len(df),
-            **cols,
-        }
+        assert_frame_contract(df)
+        prepared[symbol] = df
     return prepared
-
-def _check_entry(s, i, params, use_divergence):
-    """Entry rules, evaluated only on data available at the close of bar `i`.
-
-    RUN A: `use_divergence` is False, so divergence contributes to no entry, no
-    exit and no rejection. This matches what live Ares structurally does today —
-    the pivot loop can never flag the latest bar, so all four divergence reads are
-    permanently False in production.
-
-    Note that under Run A the momentum_breakout confluence count is unchanged at
-    2: V1-V5 awarded a point for `not bearish_div and not hidden_bear_div`, which
-    was almost always True, and the `breakout` trigger already implies the volume
-    term. Removing the divergence point therefore leaves the uptrend entry
-    population essentially as it was. The range branch does tighten, because
-    `bullish_div` could previously supply the second confluence point on its own.
-    """
-    regime = s['regime'][i]
-    if regime == 'downtrend':
-        return None
-
-    rsi = s['rsi'][i]
-    vol_ratio = s['vol_ratio'][i]
-    macd_hist = s['macd_hist'][i]
-    if np.isnan(rsi) or np.isnan(vol_ratio) or np.isnan(macd_hist):
-        return None
-
-    min_conf = params.get('min_confluence', 2)
-    min_vol = params.get('min_vol_ratio', 1.5)
-
-    if regime == 'uptrend':
-        confluence, trigger = 0, None
-        if rsi > 50 and vol_ratio > min_vol and macd_hist > 0:
-            confluence += 1
-            trigger = 'breakout'
-        if use_divergence and not s['bearish_div'][i] and not s['hidden_bear_div'][i]:
-            confluence += 1
-        if vol_ratio > min_vol:
-            confluence += 1
-        if confluence >= min_conf and trigger:
-            return {'strategy': 'momentum_breakout', 'trigger': trigger,
-                    'confluence': confluence}
-
-    elif regime == 'range':
-        confluence, trigger = 0, None
-        if rsi < params.get('rsi_oversold', 30):
-            confluence += 1
-            trigger = 'oversold'
-        if use_divergence and s['bullish_div'][i]:
-            confluence += 1
-            trigger = trigger or 'bullish_div'
-        if vol_ratio > min_vol:
-            confluence += 1
-        if confluence >= min_conf and trigger:
-            return {'strategy': 'mean_reversion', 'trigger': trigger,
-                    'confluence': confluence}
-
-    return None
-
-def _check_exit(s, i, pos, params, use_divergence):
-    """Exit rules from the close of bar `i`. Returns a reason or None.
-
-    MUST-FIX 2 and 7: this returns only a REASON. No price is produced here, so
-    the stop price can never become a fill price, and the caller fills at the next
-    bar's open rather than at this bar's close.
-
-    Conservative ordering is preserved: the stop is tested before the target.
-    """
-    price = s['Close'][i]
-    rsi = s['rsi'][i]
-
-    if price > pos['peak_price']:
-        pos['peak_price'] = price
-        new_ts = price * (1 - params.get('trailing_stop_pct', 0.10))
-        if new_ts > pos['trailing_stop']:
-            pos['trailing_stop'] = new_ts
-
-    effective_stop = max(pos['stop_loss'], pos['trailing_stop'])
-
-    if price <= effective_stop:
-        return ('trailing_stop' if pos['trailing_stop'] > pos['stop_loss']
-                else 'stop_loss')
-    if not np.isnan(rsi) and rsi > params.get('rsi_extreme_high', 90):
-        return 'emotional_extreme'
-    if (use_divergence and s['bearish_div'][i]
-            and pos['strategy'] == 'momentum_breakout'):
-        return 'bearish_divergence'
-    if (pos['strategy'] == 'mean_reversion' and not np.isnan(rsi) and rsi > 70):
-        return 'mean_reversion_complete'
-    return None
 
 def _fill(price, side, slippage):
     """Slippage always works against us: buy higher, sell lower."""
     return price * (1 + slippage) if side == 'buy' else price * (1 - slippage)
 
-def run_sim(symbols, start_date, end_date, params, label=""):
-    """Portfolio simulation with strict next-bar fills on BOTH sides.
+def _decide_exit(row, pos, params):
+    """Live's exit chain, in live's order, with live's elif semantics.
 
-    Day ordering, which is what makes the run causal:
-      1. Fill exit orders queued yesterday, at today's open.
-      2. Fill scale-out orders queued yesterday, at today's open.
-      3. Fill entry orders queued yesterday, at today's open.
+    Reproduces `tracker.py:812-858` including two behaviours Run A got wrong:
+
+    - The `bearish_div` branch is an `elif` whose *inner* test is the strategy. A
+      `mean_reversion` position on a `bearish_div` bar therefore enters the branch,
+      does nothing, and — crucially — never reaches the `mean_reversion_complete`
+      test below it. Run A folded the strategy test into the condition and fell
+      through, producing exits live cannot produce.
+    - Scale-out is NOT here. Live checks it before this chain and `continue`s, so a
+      target bar never evaluates an exit at all. The caller enforces that.
+
+    Returns an exit reason, or None.
+    """
+    price = float(row['Close'])
+    rsi = float(row['rsi']) if not pd.isna(row['rsi']) else 50.0
+    effective_stop = max(pos['stop_loss'], pos['trailing_stop'])
+
+    if price <= effective_stop:
+        return ('trailing_stop' if pos['trailing_stop'] > pos['stop_loss']
+                else 'stop_loss')
+    elif rsi > params.get('rsi_extreme_high', 90):
+        return 'emotional_extreme'
+    elif bool(row.get('bearish_div', False)):
+        if pos['strategy'] in ('momentum_breakout', 'trend_continuation'):
+            return 'bearish_divergence'
+        return None          # swallowed, exactly as live swallows it
+    elif pos['strategy'] == 'mean_reversion' and rsi > 70:
+        return 'mean_reversion_complete'
+    return None
+
+def run_sim(symbols, start_date, end_date, params, label=""):
+    """Portfolio simulation running live Ares' strategy code.
+
+    Day ordering. Every step reads only bars at or before the day being processed,
+    and fills happen at the open of the day AFTER the decision:
+      1. Exit fills queued yesterday, at today's open.
+      2. Scale-out fills queued yesterday, at today's open.
+      3. Entry fills queued yesterday, at today's open (live's pending lifecycle).
       4. Mark equity at today's close.
-      5. Decide tomorrow's exits from today's close.
-      6. Decide tomorrow's entries from today's close.
-    No step ever reads a bar later than the one being processed.
+      5. Exit decisions from today's close — scale-out FIRST, then live's chain.
+      6. Entry signals from today's close, via live's predicates.
+      7. Queue maintenance and promotion, on live's drift-only rule.
+
+    Cash is tracked for accounting only. Live tracks none, and no decision here
+    reads it, so the simulated population is cash-independent exactly as live's is;
+    the balance exists so `reconcile()` can prove the P&L.
     """
     capital = params.get('starting_capital', 1000)
     max_positions = params.get('max_positions', 5)
-    cash_reserve_pct = params.get('cash_reserve_pct', 0.25)
     tp_momentum = params.get('tp_momentum', 0.18)
     tp_reversal = params.get('tp_reversal', 0.10)
     scale_out = params.get('scale_out', True)
@@ -209,246 +203,305 @@ def run_sim(symbols, start_date, end_date, params, label=""):
     slippage = params.get('slippage_pct', 0.001)
     commission = params.get('commission_per_trade', 1.00)
     sl_mult = params.get('stop_loss_multiplier', 2.0)
-    use_divergence = params.get('divergence_in_decision_set', False)
+    stake = static_position_size(params)
 
-    data = prepare(symbols, start_date, end_date)
-    trading_days = sorted({d for s in data.values() for d in s['dates']})
+    data = prepare(symbols, start_date, end_date, params)
+    trading_days = sorted({d for df in data.values() for d in df.index})
 
     cash = float(capital)
     positions = {}
     closed = []
     history = []
     queue = []
-    pending_entries = []
+    pending = []
     pending_exits = []
     pending_scaleouts = []
 
-    counters = {
+    c = {
         'signals_total': 0, 'entries_filled': 0, 'signals_queued': 0,
         'entries_from_queue': 0, 'commissions_paid': 0.0,
-        'refused_no_stdev': 0, 'refused_too_small': 0,
-        'refused_no_next_bar': 0, 'queue_expired': 0,
+        'queue_evicted_size': 0, 'queue_expired_age': 0,
+        'queue_rejected_drift': 0, 'pending_expired': 0,
+        'pending_fill_attempts_exhausted': 0, 'stdev_fallback_fills': 0,
+        'queue_promotions_attempted': 0,
     }
-
-    def bar(sym, day):
-        s = data.get(sym)
-        if s is None:
-            return None, None
-        i = s['idx'].get(day)
-        return (s, i) if i is not None else (s, None)
 
     for day in trading_days:
         day_str = str(day)[:10]
 
         # ---- 1. exit fills at today's open -------------------------------
         for order in pending_exits:
-            sym = order['symbol']
-            pos = positions.get(sym)
-            if pos is None:
+            pos = positions.get(order['symbol'])
+            if pos is None or day not in data[order['symbol']].index:
                 continue
-            s, i = bar(sym, day)
-            if i is None:
-                continue
-            exit_price = _fill(s['Open'][i], 'sell', slippage)
-            proceeds = pos['shares'] * exit_price - commission
+            px = _fill(float(data[order['symbol']].loc[day, 'Open']), 'sell', slippage)
+            proceeds = pos['shares'] * px - commission
             cash += proceeds
-            counters['commissions_paid'] += commission
+            c['commissions_paid'] += commission
             pos['commission_paid'] += commission
-            closed.append(_book(pos, day_str, exit_price, order['reason'],
-                                proceeds, scale_out_pct))
-            del positions[sym]
+            closed.append(_book(pos, day_str, px, order['reason'], proceeds))
+            del positions[order['symbol']]
         pending_exits = []
 
         # ---- 2. scale-out fills at today's open --------------------------
         for order in pending_scaleouts:
-            sym = order['symbol']
-            pos = positions.get(sym)
-            if pos is None or pos['scaled_out']:
+            pos = positions.get(order['symbol'])
+            if pos is None or pos['scaled_out'] or day not in data[order['symbol']].index:
                 continue
-            s, i = bar(sym, day)
-            if i is None:
-                continue
-            # MUST-FIX 2, applied to the target as well as the stop: V1-V5 filled
-            # the scale-out at exactly `take_profit`, a price the market need not
-            # have traded.
-            sell_price = _fill(s['Open'][i], 'sell', slippage)
-            sell_shares = pos['original_shares'] * scale_out_pct
-            proceeds = sell_shares * sell_price - commission
+            px = _fill(float(data[order['symbol']].loc[day, 'Open']), 'sell', slippage)
+            shares = pos['original_shares'] * scale_out_pct
+            proceeds = shares * px - commission
             cash += proceeds
-            counters['commissions_paid'] += commission
+            c['commissions_paid'] += commission
             pos['commission_paid'] += commission
-            pos['shares'] -= sell_shares
+            pos['shares'] -= shares
             pos['scaled_out'] = True
             pos['scale_out_date'] = day_str
-            pos['scale_out_price'] = sell_price
-            pos['scale_out_shares'] = sell_shares
+            pos['scale_out_price'] = px
+            pos['scale_out_shares'] = shares
             pos['scale_out_proceeds'] = proceeds
         pending_scaleouts = []
 
-        # ---- 3. entry fills at today's open ------------------------------
-        for order in pending_entries:
+        # ---- 3. entry fills at today's open, live's pending lifecycle ----
+        still_pending = []
+        for order in pending:
             sym = order['symbol']
+            age = (day - order['signal_day']).days
+            if age > LIVE_PENDING_MAX_AGE_DAYS:
+                c['pending_expired'] += 1
+                continue
+            if order['attempts'] >= LIVE_MAX_FILL_ATTEMPTS:
+                c['pending_fill_attempts_exhausted'] += 1
+                continue
             if sym in positions or len(positions) >= max_positions:
                 continue
-            s, i = bar(sym, day)
-            if i is None:
-                counters['refused_no_next_bar'] += 1
+            if day not in data[sym].index:
+                # Live's "last bar != today" branch: retain and retry, which is
+                # also its 48-hour weekend gap guard. Run A dropped these silently.
+                order['attempts'] += 1
+                still_pending.append(order)
                 continue
 
-            buy_price = _fill(s['Open'][i], 'buy', slippage)
-            equity = cash + sum(
-                positions[p]['shares'] * data[p]['Close'][data[p]['idx'][day]]
-                for p in positions
-                if day in data[p]['idx']
-            )
-            available = cash - equity * cash_reserve_pct
-            size = min(available, equity * 0.20)
-            if size < 20:
-                counters['refused_too_small'] += 1
-                continue
+            buy = _fill(float(data[sym].loc[day, 'Open']), 'buy', slippage)
 
-            # MUST-FIX 6. Stop distance from the stdev of RETURNS, exactly as live
-            # Ares computes it. No Close*0.05 fabrication: a missing stdev is an
-            # absence, so the trade is refused and counted.
+            # Live substitutes 0.05 and FILLS, flagging the trade. Run A refused.
             stdev = order['stdev_20']
-            if not np.isfinite(stdev) or stdev <= 0:
-                counters['refused_no_stdev'] += 1
-                continue
+            contaminated = stdev is None
+            if contaminated:
+                stdev = LIVE_STDEV_FALLBACK
+                c['stdev_fallback_fills'] += 1
 
-            shares = (size - commission) / buy_price
-            cash -= size
-            counters['commissions_paid'] += commission
-            tp_pct = (tp_momentum if order['strategy'] == 'momentum_breakout'
-                      else tp_reversal)
+            # Static stake. No equity read, no cash gate, no minimum size.
+            shares = stake / buy
+            cash -= (shares * buy + commission)
+            c['commissions_paid'] += commission
+            tp_pct = (tp_momentum if order['strategy'] in
+                      ('momentum_breakout', 'trend_continuation') else tp_reversal)
             positions[sym] = {
-                'symbol': sym,
-                'strategy': order['strategy'],
-                'trigger': order['trigger'],
-                'confluence': order['confluence'],
-                'entry_date': day_str,
-                'entry_price': buy_price,
-                'shares': shares,
-                'original_shares': shares,
-                'stop_loss': buy_price - buy_price * stdev * sl_mult,
-                'take_profit': buy_price * (1 + tp_pct) if tp_pct > 0 else 0.0,
-                'trailing_stop': buy_price - buy_price * stdev * sl_mult,
-                'peak_price': buy_price,
-                'rsi_at_entry': order['rsi'],
-                'vol_at_entry': order['vol_ratio'],
-                'stdev_20': stdev,
-                'signal_date': order['signal_date'],
+                'symbol': sym, 'strategy': order['strategy'],
+                'trigger': order['trigger'], 'confluence': order['confluence'],
+                'signal_date': order['signal_date'], 'entry_date': day_str,
+                'entry_price': buy, 'shares': shares, 'original_shares': shares,
+                'stop_loss': buy - buy * stdev * sl_mult,
+                'take_profit': buy * (1 + tp_pct) if tp_pct > 0 else 0.0,
+                'trailing_stop': buy - buy * stdev * sl_mult,
+                'peak_price': buy,
+                'rsi_at_entry': order['rsi'], 'vol_at_entry': order['vol_ratio'],
+                'stdev_20': stdev, 'stdev_fallback': contaminated,
                 'from_queue': order['from_queue'],
-                'scaled_out': False,
-                'scale_out_date': None,
-                'scale_out_price': 0.0,
-                'scale_out_shares': 0.0,
+                'scaled_out': False, 'scale_out_date': None,
+                'scale_out_price': 0.0, 'scale_out_shares': 0.0,
                 'scale_out_proceeds': 0.0,
-                # Entry commission is part of cash at risk. V5 charged it to cash
-                # but left it out of total_invested, flattering every trade.
-                'entry_commission': commission,
-                'commission_paid': commission,
+                'entry_commission': commission, 'commission_paid': commission,
             }
-            counters['entries_filled'] += 1
-        pending_entries = []
+            c['entries_filled'] += 1
+        pending = still_pending
 
         # ---- 4. mark equity at today's close -----------------------------
         equity = cash
         for sym, pos in positions.items():
-            s, i = bar(sym, day)
-            if i is not None:
-                equity += pos['shares'] * s['Close'][i]
+            if day in data[sym].index:
+                equity += pos['shares'] * float(data[sym].loc[day, 'Close'])
         history.append({'date': day_str, 'equity': round(equity, 2),
                         'cash': round(cash, 2), 'positions': len(positions),
-                        'queue_size': len(queue)})
+                        'queue_size': len(queue), 'pending': len(pending)})
 
-        # ---- 5. decide tomorrow's exits from today's close ---------------
+        # ---- 5. exit decisions from today's close ------------------------
         for sym, pos in positions.items():
-            s, i = bar(sym, day)
-            if i is None:
+            if day not in data[sym].index:
                 continue
-            reason = _check_exit(s, i, pos, params, use_divergence)
+            # Live suppresses ALL exit logic on the entry bar (tracker.py:788).
+            # Run A permitted 1-bar trades live cannot produce.
+            if pos['entry_date'] == day_str:
+                continue
+            row = data[sym].loc[day]
+            price = float(row['Close'])
+
+            if price > pos['peak_price']:
+                pos['peak_price'] = price
+                new_ts = price * (1 - params.get('trailing_stop_pct', 0.10))
+                if new_ts > pos['trailing_stop']:
+                    pos['trailing_stop'] = new_ts
+
+            # Scale-out FIRST, and it short-circuits the exit chain, exactly as
+            # live's `continue` does. This is the ordering that protects winners.
+            if (scale_out and not pos['scaled_out'] and pos['take_profit'] > 0
+                    and price >= pos['take_profit']):
+                pending_scaleouts.append({'symbol': sym})
+                continue
+
+            reason = _decide_exit(row, pos, params)
             if reason:
                 pending_exits.append({'symbol': sym, 'reason': reason})
-                continue
-            if (scale_out and not pos['scaled_out'] and pos['take_profit'] > 0
-                    and s['Close'][i] >= pos['take_profit']):
-                pending_scaleouts.append({'symbol': sym})
 
-        # ---- 6. decide tomorrow's entries from today's close -------------
-        queue = [q for q in queue
-                 if (day - q['day']).days <= queue_max_age]
+        # ---- 6. entry signals from today's close, via LIVE predicates -----
         exiting = {o['symbol'] for o in pending_exits}
-        held = set(positions) | {o['symbol'] for o in pending_entries}
+        busy = set(positions) | {o['symbol'] for o in pending} | exiting
 
-        for sym, s in data.items():
-            if sym in held or sym in exiting:
+        for sym, df in data.items():
+            if sym in busy:
                 continue
-            i = s['idx'].get(day)
-            if i is None or i < 1:
+            i = df.index.get_indexer([day])[0]
+            if i < 1:
                 continue
-            signal = _check_entry(s, i, params, use_divergence)
+            signal = evaluate_entry(df, i, params, sym)
             if not signal:
                 continue
-            counters['signals_total'] += 1
+            c['signals_total'] += 1
             order = {
                 'symbol': sym, 'strategy': signal['strategy'],
-                'trigger': signal['trigger'], 'confluence': signal['confluence'],
-                'rsi': float(s['rsi'][i]), 'vol_ratio': float(s['vol_ratio'][i]),
-                'stdev_20': float(s['stdev_20'][i]),
-                'signal_date': day_str, 'from_queue': False,
+                'trigger': signal['trigger'],
+                'confluence': signal.get('confluence', 1),
+                'rsi': signal.get('rsi', 50.0),
+                'vol_ratio': signal.get('vol_ratio', 1.0),
+                'stdev_20': stdev_at(df, i),
+                'price_at_signal': float(df['Close'].iloc[i]),
+                'signal_date': day_str, 'signal_day': day,
+                'attempts': 0, 'from_queue': False,
             }
-            if len(positions) + len(pending_entries) >= max_positions:
-                queue.append({'symbol': sym, 'day': day, 'order': order})
-                counters['signals_queued'] += 1
+            if len(positions) + len(pending) >= max_positions:
+                queue.append(dict(order, date_added=day))
+                c['signals_queued'] += 1
             else:
-                pending_entries.append(order)
+                pending.append(order)
 
-        if queue and len(positions) + len(pending_entries) < max_positions:
-            queue.sort(key=lambda q: q['order']['confluence'], reverse=True)
+        # ---- 7. queue maintenance and live's drift-only promotion ---------
+        queue = [q for q in queue if q['symbol'] not in set(positions)
+                 | {o['symbol'] for o in pending}]
+        kept = []
+        for q in queue:
+            if (day - q['date_added']).days > queue_max_age:
+                c['queue_expired_age'] += 1
+                continue
+            kept.append(q)
+        queue = kept
+
+        # De-duplicate by symbol, keeping the strongest, then evict to max size on
+        # live's ranking key: highest confluence, then smallest drift, then oldest.
+        best = {}
+        for q in queue:
+            cur = best.get(q['symbol'])
+            if cur is None or q['confluence'] > cur['confluence']:
+                best[q['symbol']] = q
+        queue = list(best.values())
+        queue.sort(key=lambda q: (-q['confluence'],
+                                  abs(_drift(data, q, day)),
+                                  q['date_added']))
+        if len(queue) > LIVE_QUEUE_MAX_SIZE:
+            c['queue_evicted_size'] += len(queue) - LIVE_QUEUE_MAX_SIZE
+            queue = queue[:LIVE_QUEUE_MAX_SIZE]
+
+        if queue and len(positions) + len(pending) < max_positions:
             for q in queue[:]:
-                if len(positions) + len(pending_entries) >= max_positions:
+                if len(positions) + len(pending) >= max_positions:
                     break
                 sym = q['symbol']
-                if sym in positions or sym in exiting:
+                if sym in positions or sym in exiting or day not in data[sym].index:
                     continue
-                s, i = bar(sym, day)
-                if i is None or not _check_entry(s, i, params, use_divergence):
+                c['queue_promotions_attempted'] += 1
+                drift = _drift(data, q, day)
+                # Live's _validate_queued. The RSI and EMA20 gates are inert
+                # because the columns they read do not exist, so drift is the only
+                # live constraint. Run A instead demanded a full fresh signal here,
+                # which is the single largest population difference between the runs.
+                if abs(drift) > params.get('queue_max_drift_pct',
+                                           LIVE_QUEUE_MAX_DRIFT_PCT):
+                    c['queue_rejected_drift'] += 1
                     continue
-                order = dict(q['order'], from_queue=True, signal_date=day_str,
-                             stdev_20=float(s['stdev_20'][i]))
-                pending_entries.append(order)
-                counters['entries_from_queue'] += 1
+                promoted = dict(q, from_queue=True, attempts=0,
+                                signal_day=day, signal_date=day_str,
+                                stdev_20=stdev_at(data[sym],
+                                                  data[sym].index.get_indexer([day])[0]))
+                pending.append(promoted)
+                c['entries_from_queue'] += 1
                 queue.remove(q)
 
-    # ---- close anything still open at the last available bar -------------
+    # ---- no end_of_sim liquidation: live has no analogue ------------------
     last_day = trading_days[-1]
-    for sym, pos in list(positions.items()):
-        s = data[sym]
-        i = s['idx'].get(last_day, s['n'] - 1)
-        exit_price = _fill(s['Close'][i], 'sell', slippage)
-        proceeds = pos['shares'] * exit_price - commission
-        cash += proceeds
-        counters['commissions_paid'] += commission
-        pos['commission_paid'] += commission
-        closed.append(_book(pos, str(s['dates'][i])[:10], exit_price,
-                            'end_of_sim', proceeds, scale_out_pct))
-        del positions[sym]
+    open_positions = []
+    open_value = 0.0
+    for sym, pos in positions.items():
+        df = data[sym]
+        i = df.index.get_indexer([last_day])[0]
+        if i < 0:
+            i = len(df) - 1
+        mark = float(df['Close'].iloc[i])
+        value = pos['shares'] * mark
+        open_value += value
+        open_positions.append({
+            'symbol': sym, 'strategy': pos['strategy'],
+            'entry_date': pos['entry_date'], 'entry_price': round(pos['entry_price'], 6),
+            'shares': round(pos['shares'], 8), 'mark_price': round(mark, 6),
+            'market_value': round(value, 2),
+            'cost_basis': round(pos['original_shares'] * pos['entry_price']
+                                + pos['entry_commission'], 6),
+            'scaled_out': pos['scaled_out'],
+            'scale_out_proceeds': round(pos['scale_out_proceeds'], 6),
+            'unrealised_pnl': round(value + pos['scale_out_proceeds']
+                                    - pos['original_shares'] * pos['entry_price']
+                                    - pos['entry_commission'], 2),
+            'stdev_fallback': pos['stdev_fallback'],
+        })
 
-    counters['final_cash'] = round(cash, 2)
-    counters['symbols_contributing'] = len(data)
-    counters['symbols_requested'] = len(symbols)
-    counters['label'] = label
-    reconcile(closed, capital, cash)
-    return closed, history, counters
+    c.update({
+        'final_cash': round(cash, 2),
+        'open_positions': len(open_positions),
+        'open_market_value': round(open_value, 2),
+        'final_equity': round(cash + open_value, 2),
+        'static_stake': round(stake, 2),
+        'symbols_contributing': len(data),
+        'symbols_requested': len(symbols),
+        'label': label,
+    })
+    if cash < 0:
+        raise AssertionError(
+            f"Cash went negative (${cash:.2f}). Live never checks a balance, but at "
+            f"{max_positions} slots x ${stake:.2f} it cannot overdraw — so this "
+            f"means the sizing or booking logic is wrong, not that live is."
+        )
+    reconcile(closed, open_positions, capital, cash, open_value)
+    return closed, history, c, open_positions
 
-def _book(pos, exit_date, exit_price, reason, exit_proceeds, scale_out_pct):
-    """Build the trade record with the full audit trail.
+def _drift(data, q, day):
+    """Percent move from the signal price to the latest close, as live measures it."""
+    df = data.get(q['symbol'])
+    if df is None or day not in df.index:
+        return 0.0
+    base = q.get('price_at_signal') or 0.0
+    if not base:
+        return 0.0
+    return (float(df.loc[day, 'Close']) - base) / base * 100
+
+def _book(pos, exit_date, exit_price, reason, exit_proceeds):
+    """Trade record with the full audit trail.
 
     `total_invested` includes the entry commission and `total_returned` is net of
-    every commission, so `pnl` equals the real cash delta of the trade. V1-V5
-    omitted the entry commission from the cost basis and added back gross
-    scale-out proceeds, and dropped `scale_out_price` / `remaining_shares` from
-    the CSV — which is exactly why neither error was visible in the output.
+    every commission, so `pnl` is the real cash delta. Precision is high enough
+    that every figure can be re-derived from the CSV — at 4dp a validation check
+    cannot distinguish a rounding artifact from an accounting error.
+
+    `stdev_fallback` travels with the trade so the wide-stop population live fills
+    and Run A refused can be segmented later rather than silently averaged in.
     """
     invested = pos['original_shares'] * pos['entry_price'] + pos['entry_commission']
     returned = exit_proceeds + pos['scale_out_proceeds']
@@ -459,11 +512,6 @@ def _book(pos, exit_date, exit_price, reason, exit_proceeds, scale_out_pct):
         'symbol': pos['symbol'], 'strategy': pos['strategy'],
         'trigger': pos['trigger'], 'confluence': pos['confluence'],
         'signal_date': pos['signal_date'], 'entry_date': pos['entry_date'],
-        # Precision here is deliberate. At 4dp on price and 6dp on stdev, the
-        # audit fields no longer let you re-derive the stop or the cost basis to
-        # better than a fraction of a cent, so a validation check cannot tell a
-        # rounding artifact from a real accounting error. Being able to recompute
-        # every number from the CSV is the point of the CSV.
         'entry_price': round(pos['entry_price'], 6),
         'exit_date': exit_date, 'exit_price': round(exit_price, 6),
         'exit_reason': reason,
@@ -483,29 +531,36 @@ def _book(pos, exit_date, exit_price, reason, exit_proceeds, scale_out_pct):
         'stop_loss': round(pos['stop_loss'], 6),
         'take_profit': round(pos['take_profit'], 6),
         'stdev_20': round(pos['stdev_20'], 10),
-        'rsi_at_entry': round(pos['rsi_at_entry'], 2),
-        'vol_at_entry': round(pos['vol_at_entry'], 3),
+        'stdev_fallback': pos['stdev_fallback'],
+        'rsi_at_entry': round(float(pos['rsi_at_entry']), 2),
+        'vol_at_entry': round(float(pos['vol_at_entry']), 3),
         'from_queue': pos['from_queue'],
         'pnl': round(pnl, 6),
         'pnl_pct': round(pnl / invested * 100, 6),
         'win': 1 if pnl > 0 else 0,
     }
 
-def reconcile(closed, starting_capital, final_cash, tol=0.01):
-    """Assert reported P&L equals the real cash delta.
+def reconcile(closed, open_positions, starting_capital, final_cash, open_value,
+              tol=0.01):
+    """Assert reported P&L equals the real cash delta, including open positions.
 
-    The two V5 commission defects each inflated reported P&L relative to cash
-    while the printed `Commissions: $X` line made it look accounted for. An
-    assertion is the only thing that stops that class of error returning, because
-    the symptom is a slightly better number, not a crash.
+    V5's two commission defects each inflated reported P&L relative to cash while
+    the printed `Commissions: $X` line made it look accounted for. The symptom of
+    that bug class is a slightly better number, never a crash, so an assertion is
+    the only thing that catches it.
+
+    With no end-of-sim liquidation, the identity spans both books: realised P&L plus
+    unrealised P&L must equal final equity minus starting capital.
     """
-    reported = sum(t['pnl'] for t in closed)
-    actual = final_cash - starting_capital
-    if abs(reported - actual) > tol:
+    realised = sum(t['pnl'] for t in closed)
+    unrealised = sum(p['unrealised_pnl'] for p in open_positions)
+    reported = realised + unrealised
+    actual = (final_cash + open_value) - starting_capital
+    if abs(reported - actual) > max(tol, 0.01 * len(open_positions)):
         raise AssertionError(
-            f"P&L does not reconcile with cash: reported {reported:.4f} vs "
-            f"actual {actual:.4f} (diff {reported - actual:.4f}). "
-            "Check commission handling in _book / run_sim."
+            f"P&L does not reconcile with equity: reported {reported:.4f} "
+            f"(realised {realised:.4f} + unrealised {unrealised:.4f}) vs actual "
+            f"{actual:.4f}, diff {reported - actual:.4f}. Check commission handling."
         )
     return True
 
@@ -525,15 +580,27 @@ def max_drawdown(equity):
     # Positional, not label-based: the caller may pass a DatetimeIndex series.
     return float(dd.min() * 100), int(dd.to_numpy().argmin())
 
-def summarise(closed, history, counters, params):
-    """Compute the V6 metric set. No forward-looking fields exist here.
+def summarise(closed, history, counters, params, open_positions=()):
+    """Compute the Run A' metric set, on a FIXED-STAKE basis.
 
     MUST-FIX 5: `peak_after_exit` and `missed_upside_pct` are absent by
     construction, so they cannot reach parameter selection even by accident.
+
+    Sizing is static $149 and does not compound, because that is what live does.
+    The primary figures are therefore total dollar P&L and return on the notional
+    $1,000. `cagr_pct` is still reported for scale but is a NON-COMPOUNDING rate on
+    a fixed stake, so it is **not comparable to Run A's CAGR**, which was produced
+    under a compounding sizing rule Ares does not use. `return_basis` records which
+    regime produced the number so the two can never be tabulated as like for like.
+
+    Open positions are not liquidated, since live has no end-of-sim analogue. They
+    are excluded from every trade statistic and reported separately, with their
+    unrealised value included in equity.
     """
     start = params.get('starting_capital', 1000)
     hist = pd.DataFrame(history)
     df = pd.DataFrame(closed)
+    open_positions = list(open_positions)
 
     final = float(hist['equity'].iloc[-1]) if len(hist) else float(start)
     total_ret = (final - start) / start * 100
@@ -548,9 +615,15 @@ def summarise(closed, history, counters, params):
 
     out = {
         'label': counters.get('label', ''),
+        'return_basis': 'fixed_stake_non_compounding',
+        'static_stake': counters.get('static_stake'),
+        'cagr_comparable_to_run_a': False,
         'start_capital': start, 'final_equity': round(final, 2),
         'total_return_pct': round(total_ret, 2),
         'cagr_pct': round(cagr, 2),
+        'open_positions': counters.get('open_positions', 0),
+        'open_market_value': counters.get('open_market_value', 0.0),
+        'unrealised_pnl': round(sum(p['unrealised_pnl'] for p in open_positions), 2),
         'max_drawdown_pct': round(mdd, 2),
         'max_drawdown_date': (hist['equity'].index[mdd_i] and
                               hist['date'].iloc[mdd_i]) if mdd_i is not None else None,
@@ -563,7 +636,9 @@ def summarise(closed, history, counters, params):
     }
     out.update({k: counters[k] for k in (
         'signals_total', 'entries_filled', 'signals_queued', 'entries_from_queue',
-        'refused_no_stdev', 'refused_too_small', 'refused_no_next_bar') if k in counters})
+        'queue_promotions_attempted', 'queue_rejected_drift', 'queue_expired_age',
+        'queue_evicted_size', 'pending_expired',
+        'pending_fill_attempts_exhausted', 'stdev_fallback_fills') if k in counters})
 
     if df.empty:
         out.update({'trades': 0, 'win_rate_pct': 0.0, 'profit_factor': 0.0,
@@ -598,6 +673,12 @@ def summarise(closed, history, counters, params):
             float(df['pnl'].sum()) + float(df['commission_paid'].sum()), 2),
         'avg_holding_days': round(float(df['holding_days'].mean()), 1),
         'scaled_out_count': int(df['scaled_out'].sum()),
+        'from_queue_count': int(df['from_queue'].sum()),
+        # The wide-stop population live fills and Run A refused. Segmented rather
+        # than averaged in, so its effect on the headline is visible.
+        'stdev_fallback_trades': int(df['stdev_fallback'].sum()),
+        'stdev_fallback_pnl': round(
+            float(df.loc[df['stdev_fallback'], 'pnl'].sum()), 2),
     })
     return out, df, hist
 
@@ -632,9 +713,14 @@ def exit_reason_table(df):
         avg_pnl_pct=('pnl_pct', 'mean'),
         win_rate_pct=('win', lambda x: round(x.mean() * 100, 1)),
     ).round(3).sort_values('total_pnl', ascending=False)
-    total = df['pnl'].sum()
-    g['pct_of_total_pnl'] = ((g['total_pnl'] / total * 100).round(1)
-                             if total != 0 else 0.0)
+    # Deliberately NOT a percentage of net P&L. When net P&L is near zero — which
+    # is exactly the regime a break-even strategy sits in — dividing by it produces
+    # figures like "13006% of total P&L" that look like findings and are arithmetic
+    # noise. Share of gross flow is stable and answers the real question: which
+    # exit reason moves the money.
+    gross = float(df['pnl'].abs().sum())
+    g['pct_of_gross_flow'] = ((g['total_pnl'].abs() / gross * 100).round(1)
+                              if gross > 0 else 0.0)
     return g.reset_index()
 
 def buy_and_hold(symbol, start_date, end_date, start_capital, slippage, commission):

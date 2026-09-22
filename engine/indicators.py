@@ -32,9 +32,16 @@ from pathlib import Path
 SWING_WINDOW = 5
 
 def load_params():
-    config_path = Path(__file__).parent.parent / "config" / "strategy_params.json"
-    with open(config_path) as f:
-        return json.load(f)
+    """Resolve the ACTIVE config, not a hardcoded filename.
+
+    This read used to be pinned to `config/strategy_params.json`, which still holds
+    V2.1 values. A V6 run therefore computed indicators from V2.1 parameters while
+    sizing trades from V6 ones. The three keys read here are identical in both
+    files, so Run A was numerically unaffected — it agreed by coincidence, and a
+    single config edit would have turned that into a silent inconsistency.
+    """
+    from engine.active_config import load as _load
+    return _load()
 
 def add_indicators(df):
     """Add all technical indicators to a DataFrame. Ares V2."""

@@ -16,6 +16,18 @@ Run B (divergence repaired, confirmed at i+5) is out of scope.
 
     PYTHONPATH=vendor python3 run_backtest_v6.py
 """
+raise SystemExit(
+    "RETIRED 2026-09-22 — this driver produced Run A, which measured a HAND-WRITTEN "
+    "reimplementation of the strategy, not the strategy. A parity audit found ~30 "
+    "divergences from live Ares plus a look-ahead in the reimplementation's own "
+    "position sizing. Run A's results are preserved exactly as produced, in commit "
+    "134c589 and results/v6_runA_*; reproduce them by checking that commit out. "
+    "engine/portfolio_sim_v6.py has since been restructured to CALL live's "
+    "predicates, so this driver's call signature no longer matches and any result it "
+    "could produce would be a hybrid of two rule sets. See Ares/ROADMAP.md, 'Parity "
+    "audit 2026-09-22'. Use run_backtest_v6_runA2.py."
+)
+
 import json
 import sys
 from pathlib import Path
