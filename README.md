@@ -2,6 +2,51 @@
 
 Athena simulates Ares trading logic on historical data to generate ML training data and optimize strategy parameters. Named after the Greek goddess of wisdom and strategy — she teaches Ares what works.
 
+---
+
+> ## ⚠️ V1–V5 RESULTS ARE CONTAMINATED — DO NOT QUOTE
+>
+> An audit on 2026-09-22 found **look-ahead bias** in the divergence detector.
+> `engine/indicators.py:74-102` (`_find_swing_highs` / `_find_swing_lows`) compares
+> `series.iloc[i]` against `series.iloc[i + j]` for `j = 1..5`, then writes the
+> result onto bar `i`. A swing at bar `i` is not knowable until bar `i+5`, yet
+> `bearish_div` is consumed as an **exit on bar `i`** — selling at a confirmed
+> local top using information from the future.
+>
+> Measured from the result files in `results/`:
+>
+> | Run | `bearish_divergence` exits | Avg P&L | Contribution |
+> |---|---|---|---|
+> | V3 (829 trades) | 260 (31%) | +12.53% | ~89% of the per-trade edge |
+> | V5 "realistic" (209) | 74 (36%) | +12.25% | **96% of total dollar P&L** |
+>
+> **Every performance figure below is therefore unsupported**, including PF 2.12 /
+> 2.42 / 3.00, +32.5% and +22.8% annual returns, and all drawdown figures. The
+> true edge under causal rules is **unknown and materially lower**. The exact
+> magnitude is not recoverable by re-pricing those exits, because removing an exit
+> changes hold times, capital occupancy and which later trades get funded.
+>
+> Additional confirmed defects: **no holdout of any kind** (V1/V2/V3 all ran the
+> identical 2024-01-01→2026-09-01 window and universe, a window that excludes 2022
+> entirely); **max drawdown computed wrong** (`portfolio_sim.py:405` measures only
+> the drawdown after the global equity peak — true V4 is −17.8% and V5 is −20.2%,
+> not −5.0% and −15.9%); a **`hidden_bullish_div` / `hidden_bull_div` key
+> mismatch** making the confluence gate inoperative and always equal to 3; the
+> **V5 "no friction" control never executed** (dead branch at
+> `portfolio_sim_v5.py:319`); **stop distance taken from `Close.std()` of dollar
+> price levels** rather than returns, which does not match live Ares; and
+> **nothing is reproducible** because `data/ohlcv/` is empty and gitignored.
+>
+> **V1–V5 are retained as history, not as evidence.** They record what was
+> believed and why it was wrong. **V6 will be the first honest backtest.**
+>
+> Not affected, and verified correct: scale-out tranche booking, slippage
+> direction, commission accumulation, cash solvency, conservative
+> stop-before-target ordering, V5's next-bar *entry*, and the trailing indicator
+> set (RSI, MACD, SMA slope, regime), which is properly causal.
+
+---
+
 ## Purpose
 
 1. **Backtest** Ares strategies on 5 years of historical data (130 S&P 500 stocks)
@@ -135,8 +180,8 @@ V5 addresses all concerns with realistic friction and a different stock universe
 | Concern | Finding |
 |---------|---------|
 | **Friction impact** | Reduces annual return by ~10% (32.5% → 22.8%). Commissions cost $458 over 5yr. Still highly profitable. |
-| **Max drawdown** | Realistic -15.9% (was -5.0% without friction). 2022 bear market = -6.1% year. |
-| **Survivorship bias** | Disproven — mid-cap universe performed BETTER (+32.5%) than original large-caps (+22.8%). Strategy works across stock types. |
+| **Max drawdown** | **WRONG — both figures.** `portfolio_sim.py:405` measures only the drawdown after the *global* equity peak, which sits near the end of a rising curve. Recomputed from the saved equity curves: **V4 = −17.8%, V5 = −20.2%.** |
+| **Survivorship bias** | ~~Disproven~~ **RETRACTED.** Both universes are hand-picked from *today's* winners (`UNIVERSE_B` contains ARM, CAVA and BIRK, which had not IPO'd at the 2021 start). Testing one hindsight-selected list against another does not control for survivorship. The bias is present, unquantified, and needs point-in-time index membership to fix. |
 | **Universe sensitivity** | Moderate ⚠️ — 10% difference between universes. Mid-caps have more volatility = more opportunities. |
 | **Next-bar execution** | Buying at next-day open instead of same-day close adds realistic entry price delay. |
 
@@ -149,19 +194,25 @@ V5 addresses all concerns with realistic friction and a different stock universe
 | 5yr growth | $1K → $4K | **$1K → $2.5-3K** |
 | Profit factor | 2.42 | **1.7-2.4** |
 
-> **+20% annual return with -15% max drawdown is still an excellent strategy.**
-> Most hedge funds target 15-20% annual. S&P 500 averages ~10%.
+> ~~**+20% annual return with -15% max drawdown is still an excellent strategy.**~~
+>
+> **RETRACTED.** The return figure rests on the look-ahead exit and the drawdown
+> figure is a calculation bug. Neither number is evidence of anything. No claim
+> about this strategy's performance should be made until V6 Run A completes.
 
 ## Key Insights
 
-### What Works
-- **Momentum breakout in uptrends** — 51% win rate, +4.48% avg P&L
-- **Bearish divergence exit** — +12.53% avg P&L, best exit signal
-- **Scale-out (50% at TP, 50% rides)** — scaled trades average +23%
-- **Never buy in downtrends** — avoided massive losses in 2022 bear market
+> **These "insights" are products of the contaminated runs. Read them as claims
+> that failed audit, not as findings.**
 
-### What Doesn't Work
-- **Trend continuation strategy** — 24% win rate, removed in V2+
+### What Works *(unsupported)*
+- **Momentum breakout in uptrends** — 51% win rate, +4.48% avg P&L *(in-sample, bull-only window, no holdout)*
+- ~~**Bearish divergence exit** — +12.53% avg P&L, best exit signal~~ — **this is the look-ahead defect itself.** It was the single largest contributor to reported profit and it cannot be earned live.
+- **Scale-out (50% at TP, 50% rides)** — scaled trades average +23% *(circular: a trade only scales out by first reaching TP, so scaled trades are winners by construction)*
+- **Never buy in downtrends** — the regime filter *is* causal, so this is the most defensible item here, but it is still in-sample on a window containing one bear year.
+
+### What Doesn't Work *(unsupported)*
+- ~~**Trend continuation strategy** — 24% win rate, removed in V2+~~ — **verdict void.** Its `hidden_bull_div` trigger never fired in any run because of the key-name mismatch, so this judged a signal that was never active. n=54 regardless.
 - **Fixed TP** — leaves 12%+ upside on the table every time
 - **Too many positions** — increases drawdown without proportional returns
 
