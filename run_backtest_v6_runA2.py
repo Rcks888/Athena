@@ -37,8 +37,9 @@ import pandas as pd
 from engine import parity
 from engine.data_feed import MANIFEST_PATH
 from engine.portfolio_sim_v6 import (
-    REPRODUCED_LIVE_DEFECTS, buy_and_hold, exit_reason_table, load_params,
-    run_sim, static_position_size, summarise, yearly_table,
+    MODELLED_BROKER_CONSTRAINTS, REPRODUCED_LIVE_DEFECTS, buy_and_hold,
+    exit_reason_table, load_params, run_sim, static_position_size, summarise,
+    yearly_table,
 )
 from engine.universe import KNOWN_UNAVAILABLE, UNIVERSE_A, UNIVERSE_B
 
@@ -54,10 +55,34 @@ def report(name, summary, ytable, etable, openpos):
     print(f"    ${summary['start_capital']:,} -> ${summary['final_equity']:,.2f}"
           f"  ({summary['total_return_pct']:+.2f}%)   "
           f"[fixed ${summary['static_stake']:.0f} stake, NON-compounding]")
-    print(f"    Non-compounding CAGR {summary['cagr_pct']:+.2f}%  "
-          f"<- NOT comparable to Run A's compounding CAGR")
-    print(f"    Max DD {summary['max_drawdown_pct']:.2f}% (running peak)   "
-          f"Sharpe {summary['sharpe']:.2f}")
+    print(f"    CAGR suppressed: {summary['cagr_suppressed_reason']}")
+    print(f"    Max DD {summary['max_drawdown_pct']:.2f}% (running peak)"
+          f" on {summary['max_drawdown_date']}   Sharpe {summary['sharpe']:.2f}")
+
+    # THE HEADLINE. Gross edge, friction, what survives — as three lines, because
+    # "the strategy loses money" hides that Universe A has a positive gross edge
+    # which the fixed commission then consumes.
+    pct = summary['commission_pct_of_gross_profit']
+    print(f"\n    --- GROSS vs COMMISSION vs NET ---")
+    print(f"    Gross P&L before commission   ${summary['gross_pnl_before_commission']:+,.2f}"
+          f"   ({'GROSS-PROFITABLE' if summary['gross_profitable'] else 'gross-negative'})")
+    # Scoped to CLOSED trades so it reconciles against gross and net on the same
+    # line. `commissions_paid` below is cash-scoped and larger, because it also
+    # includes entry and scale-out commissions on positions still open. Two correct
+    # figures that look like one figure disagreeing with itself, so both are named.
+    print(f"    Commission (closed trades)    ${-summary['commission_total']:+,.2f}"
+          f"   (${summary['commission_per_trade']:.2f}/trade)")
+    print(f"    Net P&L after commission      ${summary['net_pnl_after_commission']:+,.2f}")
+    if pct is not None:
+        print(f"    Commission as % of gross profit  {pct:.1f}%"
+              f"   <- gross edge ${summary['gross_edge_per_trade']:.2f}/trade vs "
+              f"${summary['commission_per_trade']:.2f} cost")
+    else:
+        print(f"    Commission as % of gross profit  n/a (gross P&L is negative, so "
+              f"the ratio would invert its meaning)")
+    print(f"    Win rate before commission {summary['win_rate_before_commission_pct']:.1f}% "
+          f"vs {summary['win_rate_pct']:.1f}% after")
+    print(f"    ---------------------------------\n")
     print(f"    Trades {summary['trades']} closed   "
           f"Win rate {summary['win_rate_pct']:.1f}%   "
           f"Profit factor {summary['profit_factor']}")
@@ -65,10 +90,10 @@ def report(name, summary, ytable, etable, openpos):
           f"({summary['expectancy_pct']:+.3f}%)")
     print(f"    Gross profit ${summary['gross_profit']:,.2f}   "
           f"Gross loss ${summary['gross_loss']:,.2f}   "
-          f"Commissions ${summary['commissions_paid']:,.2f}")
-    print(f"    Net realised P&L ${summary['pnl_total']:+,.2f}   "
-          f"excl. commissions ${summary['pnl_excl_commissions']:+,.2f} "
-          f"(diagnostic, not a parameter)")
+          f"Cash commissions ${summary['commissions_paid']:,.2f} "
+          f"(incl. ${summary['commissions_paid'] - summary['commission_total']:,.2f} "
+          f"on still-open positions)")
+    print(f"    Net realised P&L ${summary['pnl_total']:+,.2f}")
     print(f"    Avg win {summary.get('avg_win_pct', 0):+.2f}%   "
           f"Avg loss {summary.get('avg_loss_pct', 0):+.2f}%   "
           f"Avg hold {summary.get('avg_holding_days', 0):.0f}d   "
@@ -84,7 +109,14 @@ def report(name, summary, ytable, etable, openpos):
           f"expired {summary['queue_expired_age']}, "
           f"evicted {summary['queue_evicted_size']}")
     print(f"    Pending: expired {summary['pending_expired']}, "
-          f"attempts exhausted {summary['pending_fill_attempts_exhausted']}")
+          f"attempts exhausted {summary['pending_fill_attempts_exhausted']}, "
+          f"already held {summary['pending_dropped_already_held']}, "
+          f"no slot {summary['pending_dropped_no_slot']}")
+    print(f"    BROKER FUNDING: {summary['refused_insufficient_cash']} entries "
+          f"refused for insufficient cash (live checks no balance; IBKR would "
+          f"reject)")
+    print(f"    Equity marks carried forward (no bar that day): "
+          f"{summary['equity_marks_carried_forward']}")
     print(f"    stdev_20 fallback fills {summary['stdev_fallback_trades']} "
           f"(live substitutes 0.05; P&L ${summary['stdev_fallback_pnl']:+,.2f})")
 
@@ -132,6 +164,9 @@ def main():
           f"${params['commission_per_trade']:.2f}/fill, next-bar BOTH sides")
     print(f"  Divergence        REMOVED from decision set (as production)")
     print(f"  End of period     positions left OPEN (live has no liquidation)")
+    print(f"  Broker funding    entries REFUSED when cash < stake + commission")
+    print(f"                    (live checks no balance and overdrew; IBKR enforces "
+          f"what live omits)")
     if KNOWN_UNAVAILABLE:
         print(f"  Excluded          {len(KNOWN_UNAVAILABLE)} symbols "
               f"(no data; see engine/universe.py)")
@@ -179,15 +214,17 @@ def main():
     print("  RUN A' vs BENCHMARK")
     print(f"{'=' * 70}")
     print(f"    {'run':<22} {'final':>12} {'totalRet':>10} {'maxDD':>9} "
-          f"{'trades':>7} {'PF':>7}")
+          f"{'trades':>7} {'PF':>7} {'gross':>10} {'comm':>9}")
     for name, s in runs.items():
         print(f"    {name:<22} {s['final_equity']:>12,.2f} "
               f"{s['total_return_pct']:>9.2f}% {s['max_drawdown_pct']:>8.2f}% "
-              f"{s['trades']:>7} {s['profit_factor']:>7}")
+              f"{s['trades']:>7} {s['profit_factor']:>7} "
+              f"{s['gross_pnl_before_commission']:>+10.2f} "
+              f"{-s['commission_total']:>+9.2f}")
     for b in benches:
         print(f"    {b['label']:<22} {b['final_equity']:>12,.2f} "
               f"{b['total_return_pct']:>9.2f}% {b['max_drawdown_pct']:>8.2f}% "
-              f"{'-':>7} {'-':>7}")
+              f"{'-':>7} {'-':>7} {'-':>10} {'-':>9}")
 
     out = {
         'run': "A'_live_predicates",
@@ -201,6 +238,7 @@ def main():
         ),
         'live_signals_md5': parity.LIVE_SIGNALS_MD5,
         'reproduced_live_defects': REPRODUCED_LIVE_DEFECTS,
+        'modelled_broker_constraints': MODELLED_BROKER_CONSTRAINTS,
         'params': params,
         'universes': runs,
         'benchmarks': benches,

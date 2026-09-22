@@ -1,5 +1,5 @@
 exit_reason,trades,total_pnl,avg_pnl,avg_pnl_pct,win_rate_pct,pct_of_gross_flow
-trailing_stop,67,568.31,8.482,5.655,61.2,29.6
-mean_reversion_complete,3,55.091,18.364,12.243,100.0,2.9
+trailing_stop,70,469.869,6.712,4.475,55.7,24.9
+mean_reversion_complete,4,84.332,21.083,14.055,100.0,4.5
 emotional_extreme,1,43.491,43.491,28.994,100.0,2.3
-stop_loss,79,-744.357,-9.422,-6.281,0.0,38.8
+stop_loss,70,-655.482,-9.364,-6.243,0.0,34.7

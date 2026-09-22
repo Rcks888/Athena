@@ -1,0 +1,3 @@
+symbol,strategy,entry_date,entry_price,shares,mark_price,market_value,cost_basis,scaled_out,scale_out_proceeds,unrealised_pnl,stdev_fallback
+CHEF,momentum_breakout,2026-06-12,90.740652,0.82102122,115.519997,94.84,150.0,True,90.747594,35.59,False
+SCCO,momentum_breakout,2026-08-24,219.219,0.67968561,201.610001,137.03,150.0,False,0.0,-12.97,False

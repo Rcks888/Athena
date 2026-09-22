@@ -1,209 +1,218 @@
-# Athena V6 Run A′ — the first backtest that runs Ares' own strategy code
+# Athena V6 Run A′ — live predicates, causal, funded
 
 **Date:** 2026-09-22
 **Baseline:** Run A, commit `134c589`, preserved unmodified
-**Verdict:** the strategy loses money on both universes. Correcting ~30 parity
-defects moved the result **in both directions** and changed nothing about that.
+**Supersedes:** the first A′ pass, kept at `results/superseded_runA2_no_cash_gate/`,
+which financed a quarter of Universe B on an overdraft that cannot exist.
 
 ---
 
-## 1. What Run A′ is, and why Run A had to be replaced rather than patched
+## The finding
 
-Run A was causal. Its numbers were honest about look-ahead. But it measured **a
-hand-written reimplementation of the strategy, not the strategy.**
-`portfolio_sim_v6.py` imported only `data_feed` and `indicators` and re-expressed
-every entry rule in its own `_check_entry`, while `engine/signals.py` sat beside it
-as a near-copy that **nothing imported**. An independent parity audit found ~30
-divergences from live Ares, plus a look-ahead the reimplementation had introduced
-on its own.
+**On the mega-cap universe the strategy has a positive gross edge that the fixed
+commission then consumes. It is not a losing strategy so much as a strategy whose
+edge is smaller than its friction at this position size.**
 
-Patching those thirty items individually would have left the defect class intact,
-because the next edit to Ares diverges again. So Run A′ **calls live's predicates**:
+| Universe A (130) | |
+|---|---|
+| Gross P&L before commission | **+$273.21** ← gross-profitable |
+| Commission (145 closed trades) | **−$331.00** |
+| **Net P&L** | **−$57.79** |
+| Commission as % of gross profit | **121.2%** |
+| Gross edge per trade | **+$1.88** |
+| Commission per trade | **−$2.28** |
 
-- `engine/signals.py` is now a **byte-identical copy** of `Ares/engine/signals.py`
-  (md5 `da2ba2596cf43f6405dfd4521824c33d`).
-- `engine/parity.py` asserts that checksum **at import**, so no code path can reach
-  a simulation with a drifted copy.
-- `engine/live_adapter.py` hands those predicates `df.iloc[:i+1]`. Causality stops
-  being a claim about our code and becomes a property of the data they receive —
-  a function cannot read bar `i+1` that is not in the frame it was given.
+At $149 per position, $1.00 each way is **1.34% round-trip** against a gross edge of
+about **1.26%**. The edge is real and it is smaller than the toll. Win rate is 32.4%
+before commission and 30.3% after — commission alone flips 2.1% of trades from
+winners to losers.
 
-The drift was already real and measurable when this was built. Athena's dead copy
-was **one functional line** behind live: Ares V3 added a `disable_trend_cont` gate
-to the dispatcher and the copy still had the ungated `if not signal:`. One line, in
-the code that decides which strategies may fire, silently wrong. That is the whole
-argument for a checksum over a copy.
+**This must be tempered, and the control universe does temper it.** Universe A is
+the survivorship-flattered mega-cap list. Universe B — the nominal control — is
+**gross-negative at −$269.85 before commission**, so it has no edge for commission
+to consume. **No edge is established.** What is established is a sharper diagnosis
+than "the strategy loses money": on the flattered universe the gross edge exists and
+is eaten by fixed costs, and on the control it does not exist at all.
 
 ---
 
-## 2. Headline numbers
+## Headline numbers
 
-`2021-09-01 → 2026-09-01`, 0.10% slippage, $1.00/fill, next-bar fills on both
-sides, divergence removed from the decision set, **static $149 stake**.
+`2021-09-01 → 2026-09-01`, 0.10% slippage, $1.00/fill, next-bar fills both sides,
+divergence removed from the decision set, static $149 stake, **broker funding
+enforced**.
 
 | | Universe A (130) | Universe B (98) |
 |---|---|---|
-| Final equity | **$915.35** | **$561.07** |
-| Total return | **−8.46%** | **−43.89%** |
-| Non-compounding CAGR | −1.78% | −11.07% |
-| Max drawdown (running peak) | −38.01% | −59.75% |
-| Sharpe | −0.05 | −0.39 |
-| Closed trades | 150 | 180 |
-| Win rate | 30.0% | 26.7% |
-| Profit factor (true dollar) | **0.922** | **0.702** |
-| Expectancy / trade | −$0.52 | −$2.56 |
-| Net realised P&L | −$77.47 | −$461.56 |
-| Commissions | $345.00 | $405.00 |
-| Still open at end | 5 pos, −$7.18 unrealised | 2 pos, +$22.62 unrealised |
+| Final equity | **$944.25** (−5.58%) | **$426.77** (−57.32%) |
+| Gross P&L / commission / net | +$273.21 / −$331.00 / **−$57.79** | −$269.85 / −$326.00 / **−$595.85** |
+| Max drawdown (running peak) | −34.65% (2023-05-23) | −67.55% (2026-02-26) |
+| Sharpe | −0.02 | −0.74 |
+| Closed trades | 145 | 148 |
+| Win rate (before → after commission) | 32.4% → 30.3% | 30.4% → 25.7% |
+| Profit factor | 0.941 | 0.537 |
+| Expectancy / trade | −$0.40 | −$4.03 |
+| Entries refused, insufficient cash | 16 | **305** |
+| Still open at end | 5 pos, +$2.05 | 2 pos, +$22.62 |
 
-Benchmarks over the same window: **SPY +85.66%**, **QQQ +97.72%**.
+Benchmarks: **SPY +85.66%**, **QQQ +97.72%**. Buy-and-hold deploys the full $1,000
+and compounds; Run A′ risks at most 5 × $149 = $745 and never reinvests, so this
+compares strategies, not equal capital at risk.
 
-> Buy-and-hold deploys the full $1,000 and compounds. Run A′ risks at most
-> 5 × $149 = $745 and never reinvests. The comparison is of strategies, not of
-> equal capital at risk.
-
----
-
-## 3. Run A → Run A′, and the comparison that is NOT valid
-
-| | Run A (A) | Run A′ (A) | | Run A (B) | Run A′ (B) |
-|---|---|---|---|---|---|
-| Total return | −15.66% | **−8.46%** | | −27.55% | **−43.89%** |
-| Max DD | −30.23% | −38.01% | | −37.76% | −59.75% |
-| Trades | 156 | 150 | | 243 | 180 |
-| Win rate | 26.9% | 30.0% | | 31.7% | 26.7% |
-| Profit factor | 0.853 | 0.922 | | 0.844 | 0.702 |
-| Signals | 3,135 | 935 | | 2,497 | 599 |
-| Entries from queue | 0 | 31 | | 1 | 14 |
-
-**Universe A improved, Universe B got substantially worse, and drawdown worsened on
-both.** This was the outcome stated in advance: correcting a mismatch does not
-improve a strategy, it **selects a different population**. The thirty defects did
-not point one way and did not cancel.
-
-**`cagr_pct` is not comparable between the two runs.** Live sizes positions at a
-static $149 and does not compound; Run A used
-`min(cash − equity×0.25, equity×0.20)`, which does. Run A's positions started ~33%
-larger and grew with the equity curve. The two CAGRs describe **different money**.
-`results/v6_runA2_summary.json` records `return_basis: fixed_stake_non_compounding`
-and `comparable_to_run_a: false` so the figures cannot later be tabulated as like
-for like.
+**No CAGR is reported.** Under a fixed non-compounding stake an annualised compound
+rate describes money this run never had. The field is *absent* from the summary
+rather than captioned, because a labelled number survives its caveat and gets quoted
+later — that is precisely how "PF 2.41 over 1060 trades" reached Ares' README.
+Run A's `cagr_pct` is left untouched: it genuinely compounded, so the figure was
+valid there and `ROADMAP.md` quotes it.
 
 ---
 
-## 4. The four corrections that moved the number
+## The funding constraint, and why adding it is not "fixing live"
 
-1. **Sizing is static and non-compounding** (`tracker.py:123`, $149 fixed). This is
-   also what removed Run A's own look-ahead: `:300` sized from today's Close for an
-   order filling at today's Open. There is now no equity read at fill time at all,
-   so the defect cannot recur by construction.
-2. **Queue promotion no longer re-requires the signal.** Live promotes on drift
-   alone. Run A demanded a full fresh signal on the promotion bar, so **2,931
-   queued signals produced 0 entries**. Run A′: 811 queued, **31 entered**.
-3. **Scale-out is checked before exits and short-circuits them** (`tracker.py:814`).
-   Run A checked exits first, letting an `emotional_extreme` (rsi > 90, common
-   exactly at a profit target) liquidate a whole position where live banks half and
-   rides the rest. This hit **winners specifically** — scale-outs rose 34 → 40 on A.
-4. **Signal volume fell 3,135 → 935** (−70%), because live's real entry gate
-   includes a 52-week-high proximity test the reimplementation lacked, and lacks a
-   phantom `rsi > 50` the reimplementation had added.
+The previous A′ pass reproduced live Ares faithfully — including that **live tracks
+no cash balance and checks funding nowhere.** That reproduced live's *missing check*,
+and the result was not faithful but impossible:
 
-**One correction turned out inert.** Live substitutes `stdev_20 = 0.05` and fills
-where Run A refused, so this was expected to add a wide-stop population. It added
-**zero trades**: indicators are computed on full history *before* the window is
-sliced, so `stdev_20` is always warm. The trade record carries a `stdev_fallback`
-flag anyway, so if the mechanism ever does fire those trades can be segmented
-rather than silently averaged into the headline.
+| | overdrawn days | worst overdraft |
+|---|---|---|
+| Universe A | 39 of 1241 (3.1%) | −$105.15 |
+| **Universe B** | **309 of 1241 (24.9%)** | **−$356.00** |
 
----
+Live Ares trades through IBKR, and **IBKR enforces what live's code omits** — those
+orders would have been rejected. The broker is part of the live system, so modelling
+its funding rule **completes** the model rather than editing the strategy. This is
+categorically different from the inert `RSI`/`EMA_20` queue gates, which no external
+party enforces and which remain reproduced as-is.
 
-## 5. Live defects reproduced deliberately, not fixed
+The gate is the broker's rule — cash must cover the debit — and explicitly **not**
+the 25% reserve. Live never enforces a running reserve; `cash_reserve_pct` appears
+only in the formula deriving the static stake. The debit includes commission, because
+commission is part of what the broker debits; gating on the stake alone would leave
+cash at −$1.00 per fill and quietly reintroduce the overdraft.
 
-Run A′ measures the system Ares **is**, not the one its source appears to describe.
+After gating, minimum cash is **$10.20** (A) and **$0.14** (B), with zero overdrawn
+days. Solvency is now asserted on **every** simulated day. The old assertion tested
+terminal cash only, which is why a 309-day overdraft that had recovered by the final
+bar never tripped it — and its comment, "at 5 slots × $149 it cannot overdraw", was
+false: the stake is constant while equity falls.
 
-- **The queue's RSI and EMA20 gates are inert.** `tracker.py:400,403` read
-  `latest.get('RSI', 50)` and `latest.get('EMA_20', 0)`, but `add_indicators`
-  produces lowercase `rsi` and **never produces `EMA_20` at all**. The RSI check
-  always sees 50 and can never reject; the EMA20 check always compares against 0
-  and can never reject. **Live promotion is `|drift| ≤ 5%` and nothing else.**
-  *This was found while building Run A′ and is not in the parity audit's list* —
-  same inert-gate class as the six dead config keys.
-- **All four divergence reads are structurally False in production.** Live's pivot
-  loop stops at `len − window − 1` while live reads `len − 1`. `indicators.py` is
-  now causal and *can* flag the latest bar, so faithfulness required masking those
-  columns — otherwise the backtest would fire an exit live is incapable of firing.
-
-Neither is repaired here. Fixing live behaviour inside the backtest is precisely how
-the backtest and the live system drifted apart in the first place. Both belong in
-Ares, as live changes, measured afterward.
+Universe B refused **305 entries** for want of funding, against 16 in A. That is the
+constraint biting exactly where the account had collapsed to ~$340, and it is why B
+got *worse*: the strategy was denied the entries it needed while its losers still
+ran.
 
 ---
 
-## 6. Validation — 24 checks, all passing
+## Movement in both directions, twice
 
-The important addition is a **general** look-ahead test, because Run A passed every
-targeted causality check and still contained a look-ahead in sizing that no
-targeted test covered, since nobody suspected sizing.
+| | Run A | A′ ungated | **A′ funded** |
+|---|---|---|---|
+| Universe A | −15.66% | −8.46% | **−5.58%** |
+| Universe B | −27.55% | −43.89% | **−57.32%** |
+| A max DD | −30.23% | −38.01% | −34.65% |
+| B max DD | −37.76% | −59.75% | −67.55% |
 
-`test_future_perturbation_cannot_change_the_past` runs the simulation to a cut date,
-re-runs it with **every post-cut bar corrupted** (prices ×50, RSI forced to 99,
-MACD histogram inverted), and asserts that all 56 pre-cut trades are identical
-across 8 fields. Any read of a future bar — in entry logic, exit logic, sizing,
-stops or fills — changes something and fails. It would have caught the sizing
-defect **without being told to look for it**, and passes now.
-
-Also added: static-sizing invariance (stake spread $0.000013 across the run),
-no-exit-on-entry-bar, scale-out short-circuit, no `end_of_sim` liquidation, the
-adapter slice check (776 predicate calls verified to receive a frame ending exactly
-at the decision bar), and a reconciliation that now spans **both books** — realised
-plus unrealised P&L must equal the change in total equity, reconciling to $0.0005.
-
-Two of Run A's tests were themselves wrong and were corrected:
-- The adapter slice check probed only the last 40 bars of one symbol, so it failed
-  for want of an uptrend rather than for a defect. Now scans whole series across
-  three predicates. *(Second time a data-dependent test has had to be fixed here.)*
-- "No fabricated 0.05 fallback" asserted the opposite of live behaviour. Now
-  asserts any fallback trade is **flagged**, rather than that it never happens.
+Both corrections — the ~30 parity defects, then the funding constraint — moved
+Universe A up and Universe B down. Refusing entries removes winners and losers
+alike, and the direction was not predictable in advance. Neither pass changed the
+conclusion that neither universe is profitable net of costs.
 
 ---
 
-## 7. What this does and does not establish
+## Live defects recorded, not fixed
 
-**Establishes.** Under its frozen parameters, on this window, with real friction and
-live's actual entry rules, the strategy loses money on both universes and
-underperforms SPY by ~94 points on Universe A. Profit factor below 1.0 on both.
-Universe B's −59.75% drawdown is not survivable in practice.
+Three, now, in `REPRODUCED_LIVE_DEFECTS`. None are repaired in Athena; fixing live
+behaviour inside the backtest is how the backtest and the live system drifted apart.
 
-**Does not establish.** That any *other* parameter set fails. Nothing was varied —
-`tp_momentum 0.18` and `trailing_stop_pct 0.10` were measured, not chosen. Re-tuning
-on this window is how the original inflated figure was manufactured; a real re-fit
-needs fit 2021–2024 / test 2024–2026 and reports only the test result.
+1. **Queue promotion gates are inert.** `tracker.py:400,403` read `latest.get('RSI',
+   50)` and `latest.get('EMA_20', 0)`, but `add_indicators` emits lowercase `rsi` and
+   **never emits `EMA_20` at all**. RSI always reads 50 and can never reject; EMA20
+   always compares against 0 and can never reject. **Live promotion is
+   `|drift| ≤ 5%` and nothing else.**
+2. **All four divergence reads are structurally False in production.** The pivot loop
+   stops at `len − window − 1` while live reads `len − 1`.
+3. **Live sizes from `starting_capital` as a constant and never checks a balance**
+   (`tracker.py:119-123`). As the account declines the static $149 becomes a growing
+   fraction of equity and live will attempt orders IBKR rejects: **at $427 equity,
+   5 × $149 = $745 is unfundable.** This has real consequences before June 2027.
 
-**Still open.** Run B (divergence repaired, confirmed at `i+5`) remains out of
-scope. The divergence exit produced ~96% of V5's dollar P&L and **cannot fire live
-at all**, so repairing it is a live change to Ares and a new measurement, not a
-rerun.
-
-**The 2024 anomaly.** Both universes were solidly profitable in 2024 (A +23.70%,
-B +37.66%) and lost money in every other year. One good year in six is what a
-momentum strategy looks like when it is fitted to a trend and the trend stops. It is
-not a reason to re-fit on 2024.
+None of the three are in the parity audit's list. All three are Ares' to fix, in
+Ares.
 
 ---
 
-## 8. Reproducing
+## Validation — 33 checks, all passing
+
+The centrepiece remains general rather than targeted, because Run A passed every
+targeted causality check and still hid a look-ahead in sizing that no targeted test
+covered. `test_future_perturbation_cannot_change_the_past` corrupts every bar after a
+cut date (prices ×50, RSI→99, MACD inverted) and asserts all 56 pre-cut trades are
+identical across 8 fields.
+
+New this pass: cash non-negative on **every** day; every order-drop path and equity
+skip counted (9 paths); `cagr_pct` **absent** from the summary; per-trade
+`gross = net + commission` re-derivable from the CSV; `max_drawdown_date` a date even
+when the trough sits at row 0; queue ordering matching live.
+
+Corrected this pass:
+
+- **`max_drawdown_date` returned `0`** instead of a date when the worst drawdown sat
+  at row 0 — `index[0]` is falsy, so `and` short-circuited to the integer.
+- **Equity silently dropped a held symbol with no bar that day**, understating equity
+  and drawdown with no counter. Now carries the last known mark forward and counts
+  occurrences (0 in both universes, so no figure changed).
+- **`queue_max_size` was hardcoded** where live reads `params.get('queue_max_size',
+  10)`. Identical today, divergent the moment the key is added.
+- **Queue eviction and duplicate handling differed from live.** Live evicts on
+  `(-confluence, date_added)` and keeps the **first** duplicate; the sim ranked with
+  `|drift|` as a second key and kept the highest-confluence duplicate. Drift now
+  appears only in the promotion test.
+- **Pending orders dropped for being already held or having no slot had no counter**,
+  unlike every other drop path.
+- **Commission was summary-only**, so the gross/net split could not be audited from
+  the CSV. `pnl_before_commission` and `win_before_commission` are now trade fields.
+- **Two commission figures looked like one figure disagreeing with itself** ($331 vs
+  $337). Both are correct and differently scoped: $331 on closed trades, plus $6 of
+  entry and scale-out commission on the 5 still-open positions. Both are now named.
+
+---
+
+## What this does and does not establish
+
+**Establishes.** Under frozen parameters, on this window, with real friction, live's
+actual entry rules and an enforced funding constraint, neither universe is profitable
+net of costs. Universe A is gross-profitable and commission-negative; Universe B is
+gross-negative. Profit factor 0.941 and 0.537. B's −67.55% drawdown is not
+survivable.
+
+**Does not establish.** That any other parameter set fails. Nothing was varied.
+The commission finding makes it tempting to argue for fewer, larger positions — **that
+is a design question for Ares V4, not a parameter to tune here.** Re-fitting on this
+window is how the original inflated figure was manufactured; a real re-fit needs
+fit 2021–2024 / test 2024–2026 and reports only the test result.
+
+**Still open.** Run B (divergence repaired, confirmed at `i+5`) remains out of scope.
+
+**The 2024 anomaly persists.** Both universes were profitable in 2024 (A +24.61%,
+B +9.87%) and lost in every other year. One good year in six is what a momentum
+strategy looks like when fitted to a trend that then stopped. Not a reason to re-fit
+on 2024.
+
+---
+
+## Reproducing
 
 ```bash
 cd ~/Olympus/Athena
-PYTHONPATH=vendor python3 validate_v6.py            # 24 checks
+PYTHONPATH=vendor python3 validate_v6.py            # 33 checks
 PYTHONPATH=vendor python3 run_backtest_v6_runA2.py  # ~2 min
 ```
 
-Data is the committed snapshot in `data/ohlcv/` (217 CSVs) — no network access, so
-the run is bit-reproducible. `run_backtest_v6.py` (Run A) is **retired with a hard
-refusal**: the engine beneath it was restructured, so any result it could now
-produce would be a hybrid of two rule sets. Run A is reproduced by checking out
-`134c589`.
+Data is the committed snapshot in `data/ohlcv/` (217 CSVs, tracked in git alongside
+`data/snapshot_manifest.json`) — no network access, so the run is bit-reproducible.
+`run_backtest_v6.py` (Run A) is retired with a hard refusal; Run A is reproduced by
+checking out `134c589`.
 
 `vendor/` pins (numpy 2.2.6, pandas 3.0.5, pandas_ta 0.4.71b0, yfinance 1.6.0) are
 **load-bearing for comparability** with live. See `PROVENANCE.md`, which also records

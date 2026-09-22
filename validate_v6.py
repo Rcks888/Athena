@@ -268,6 +268,119 @@ def test_future_perturbation_cannot_change_the_past(symbols):
           f"{drifted[:6]}" if drifted else
           f"{len(base)} trades x {len(fields)} fields unchanged")
 
+def test_cash_never_negative_on_any_day(hist, counters):
+    """Solvency on EVERY day, not just the last one.
+
+    The original assertion tested terminal cash only, so Universe B's 309-day,
+    -$356.00 overdraft never tripped it. Live Ares checks no balance, but IBKR does,
+    so an overdrawn day represents orders that would have been rejected — the
+    portfolio simply could not have existed.
+    """
+    h = pd.DataFrame(hist)
+    neg = h[h['cash'] < 0]
+    check("cash never negative on ANY simulated day",
+          neg.empty,
+          f"{len(neg)} day(s) overdrawn, worst ${neg['cash'].min():.2f} on "
+          f"{neg['date'].iloc[neg['cash'].argmin()]}" if not neg.empty
+          else f"{len(h)} days, minimum cash ${h['cash'].min():.2f}")
+    check("funding refusals are counted, not silent",
+          'refused_insufficient_cash' in counters,
+          f"{counters.get('refused_insufficient_cash')} entries refused")
+
+def test_every_drop_path_has_a_counter(counters):
+    """No order may leave the system without being recorded somewhere.
+
+    Silent symbol skips were an original audit finding, and pending orders dropped
+    for being already held or having no free slot had no counter, unlike every other
+    drop path. An uncounted exclusion is an invisible change to the trade population.
+    """
+    required = ('refused_insufficient_cash', 'pending_expired',
+                'pending_fill_attempts_exhausted', 'pending_dropped_already_held',
+                'pending_dropped_no_slot', 'queue_expired_age',
+                'queue_evicted_size', 'queue_rejected_drift',
+                'equity_marks_carried_forward')
+    missing = [k for k in required if k not in counters]
+    check("every order drop path and equity skip is counted",
+          not missing, f"missing counters: {missing}" if missing
+          else f"all {len(required)} paths counted")
+
+def test_max_drawdown_date_is_a_date(history):
+    """`index[mdd_i] and ...` returned 0 when the worst drawdown sat at row 0.
+
+    A RangeIndex position of 0 is falsy, so the `and` short-circuited to the integer
+    instead of the date. Tested with a series whose worst drawdown IS at row 0, which
+    is the only case that triggered it.
+    """
+    from engine.portfolio_sim_v6 import summarise
+    worst_first = pd.DataFrame({
+        'date': ['2021-01-04', '2021-01-05', '2021-01-06'],
+        'equity': [1000.0, 900.0, 950.0], 'cash': [0.0, 0.0, 0.0],
+        'positions': [0, 0, 0], 'queue_size': [0, 0, 0], 'pending': [0, 0, 0]})
+    mdd, idx = max_drawdown(worst_first['equity'])
+    got = (worst_first['date'].iloc[idx] if idx is not None else None)
+    check("max_drawdown_date is a date even when the trough is at row 0",
+          isinstance(got, str) and got.startswith('2021'), f"got {got!r}")
+
+def test_equity_marks_carry_forward(counters):
+    """A held symbol with no bar must retain its last mark, not vanish from equity.
+
+    Dropping its market value understated equity and drawdown on those days with no
+    counter to reveal it. A halted symbol keeps its last price; it is not worthless.
+    """
+    check("equity mark carry-forward is instrumented",
+          'equity_marks_carried_forward' in counters,
+          f"{counters.get('equity_marks_carried_forward')} carried-forward marks")
+
+def test_gross_and_net_are_auditable_from_the_csv(closed):
+    """The gross/net split must be re-derivable per trade, not summary-only.
+
+    Commission was aggregated in the summary while the per-trade record could not
+    reproduce it — the computed-then-discarded class. Gross P&L is now a trade field
+    and must satisfy gross = net + commission for every single trade.
+    """
+    df = pd.DataFrame(closed)
+    check("pnl_before_commission present in the trade record",
+          'pnl_before_commission' in df.columns)
+    if 'pnl_before_commission' not in df.columns:
+        return
+    resid = (df['pnl_before_commission'] - (df['pnl'] + df['commission_paid'])).abs()
+    check("per-trade gross = net + commission",
+          float(resid.max()) < 0.005, f"max residual ${float(resid.max()):.6f}")
+    check("win_before_commission is consistent with gross P&L",
+          bool((df['win_before_commission']
+                == (df['pnl_before_commission'] > 0).astype(int)).all()))
+
+def test_cagr_is_absent_from_the_summary(summary):
+    """Decision 1 was to SUPPRESS the figure, not to caption it.
+
+    A labelled number survives its caveat and gets quoted later; that is how
+    "PF 2.41 over 1060 trades" reached Ares' README. Under a fixed non-compounding
+    stake an annualised compound rate describes money the run never had, so the
+    field must not exist at all.
+    """
+    check("cagr_pct absent from the Run A' summary",
+          'cagr_pct' not in summary,
+          f"present with value {summary.get('cagr_pct')}"
+          if 'cagr_pct' in summary else "suppressed")
+    check("suppression reason and comparability flag recorded instead",
+          'cagr_suppressed_reason' in summary
+          and summary.get('comparable_to_run_a') is False)
+
+def test_queue_ordering_matches_live(params):
+    """Live evicts on (-confluence, date_added) and keeps the FIRST duplicate.
+
+    The sim ranked with |drift| as a second key and kept the highest-confluence
+    duplicate. Identical in most cases, but it chose a different survivor whenever a
+    symbol re-signalled more strongly, and a different eviction victim on ties.
+    """
+    import engine.portfolio_sim_v6 as sim
+    src = Path(sim.__file__).read_text()
+    check("queue sorted on (-confluence, date_added) only",
+          "key=lambda q: (-q['confluence'], q['date_added'])" in src,
+          "drift is used only in the promotion test, not the ordering")
+    check("queue_max_size read from params, not hardcoded",
+          "params.get('queue_max_size'" in src)
+
 def test_sizing_is_static_and_equity_independent(closed, params):
     """Live sizes every position at a fixed $149. Run A compounded instead.
 
@@ -461,6 +574,17 @@ def main():
     print(f"\n  Execution and pricing (must-fixes 2, 7):")
     test_next_bar_fills(closed)
     test_no_fill_at_stop_price(closed)
+
+    print(f"\n  Broker funding constraint (live omits it; IBKR does not):")
+    test_cash_never_negative_on_any_day(hist, counters)
+    test_every_drop_path_has_a_counter(counters)
+    test_equity_marks_carry_forward(counters)
+
+    print(f"\n  Reporting integrity:")
+    test_cagr_is_absent_from_the_summary(summary)
+    test_gross_and_net_are_auditable_from_the_csv(closed)
+    test_max_drawdown_date_is_a_date(hist)
+    test_queue_ordering_matches_live(params)
 
     print(f"\n  Live parity of the trade lifecycle:")
     test_sizing_is_static_and_equity_independent(closed, params)

@@ -65,7 +65,7 @@ RESULTS_DIR = Path(__file__).parent.parent / "results"
 # Live constants that live reads from its own module scope rather than config.
 LIVE_PENDING_MAX_AGE_DAYS = 4      # tracker.py pending lifecycle
 LIVE_MAX_FILL_ATTEMPTS = 3         # tracker.py MAX_FILL_ATTEMPTS
-LIVE_QUEUE_MAX_SIZE = 10           # tracker.py queue_max_size
+LIVE_QUEUE_MAX_SIZE = 10           # tracker.py default; params override if present
 LIVE_QUEUE_MAX_DRIFT_PCT = 5.0     # tracker.py queue_max_drift_pct
 LIVE_STDEV_FALLBACK = 0.05         # tracker.py:141
 
@@ -89,8 +89,48 @@ Defects reproduced deliberately, because Run A' measures the system Ares IS:
    columns to False — otherwise the backtest would fire an exit live is incapable
    of firing. That is what `divergence_in_decision_set: false` does.
 
-Neither is fixed here. Fixing live behaviour inside the backtest is exactly how the
-backtest and the live system drifted apart in the first place.
+3. Position size is computed from `starting_capital` as a CONSTANT
+   (`tracker.py:119-123`) and live performs NO balance check anywhere. As the
+   account declines, the static $149 becomes a growing fraction of equity, and live
+   will attempt orders the broker rejects: at $561 equity, 5 x $149 = $745 is
+   unfundable. This is a live defect with real consequences before June 2027, and
+   like the inert gates it is not in the parity audit's list.
+
+Not fixed here. Fixing live behaviour inside the backtest is exactly how the
+backtest and the live system drifted apart in the first place. Defect 3 is recorded
+for Ares to fix in Ares; what the backtest models instead is the BROKER's response
+to it, which is a different thing — see MODELLED_BROKER_CONSTRAINTS.
+"""
+
+MODELLED_BROKER_CONSTRAINTS = """\
+Constraints enforced here that live Ares' own code does not enforce:
+
+1. FUNDING. An entry is refused when available cash cannot cover the full debit
+   (stake + commission), counted as `refused_insufficient_cash`.
+
+   Live tracks no balance, so reproducing live exactly meant reproducing its
+   MISSING check — and the result was not faithful, it was impossible. Universe B
+   spent 309 of 1241 days (24.9%) with negative cash, to a minimum of -$356.00;
+   Universe A, 39 days (3.1%) to -$105.15. Those orders do not happen. Live Ares
+   trades through IBKR and IBKR enforces the constraint live's code omits, so those
+   fills would have been REJECTED.
+
+   This is categorically different from the inert RSI/EMA_20 gates. Those are live
+   defects no external party enforces, so reproducing them reproduces real
+   behaviour. Funding is enforced by a counterparty that is part of the live system,
+   so modelling it COMPLETES the model rather than editing the strategy.
+
+   The gate is the broker's rule — cash must cover the debit — and NOT the 25%
+   reserve. Live never enforces a running reserve; `cash_reserve_pct` appears only
+   in the formula that derives the static stake. Gating on the reserve would be
+   inventing a rule, which is the error this file exists to avoid.
+
+   The debit includes commission because commission is part of what the broker
+   debits. Gating on the stake alone would leave cash at -$1.00 per fill and
+   silently reintroduce the overdraft this closes.
+
+   Direction of the effect is not predictable: refusing entries removes winners and
+   losers alike.
 """
 
 def load_params(name=None):
@@ -223,7 +263,9 @@ def run_sim(symbols, start_date, end_date, params, label=""):
         'queue_evicted_size': 0, 'queue_expired_age': 0,
         'queue_rejected_drift': 0, 'pending_expired': 0,
         'pending_fill_attempts_exhausted': 0, 'stdev_fallback_fills': 0,
-        'queue_promotions_attempted': 0,
+        'queue_promotions_attempted': 0, 'refused_insufficient_cash': 0,
+        'pending_dropped_already_held': 0, 'pending_dropped_no_slot': 0,
+        'equity_marks_carried_forward': 0,
     }
 
     for day in trading_days:
@@ -273,7 +315,11 @@ def run_sim(symbols, start_date, end_date, params, label=""):
             if order['attempts'] >= LIVE_MAX_FILL_ATTEMPTS:
                 c['pending_fill_attempts_exhausted'] += 1
                 continue
-            if sym in positions or len(positions) >= max_positions:
+            if sym in positions:
+                c['pending_dropped_already_held'] += 1
+                continue
+            if len(positions) >= max_positions:
+                c['pending_dropped_no_slot'] += 1
                 continue
             if day not in data[sym].index:
                 # Live's "last bar != today" branch: retain and retry, which is
@@ -283,6 +329,19 @@ def run_sim(symbols, start_date, end_date, params, label=""):
                 continue
 
             buy = _fill(float(data[sym].loc[day, 'Open']), 'buy', slippage)
+
+            # BROKER FUNDING CONSTRAINT. See MODELLED_BROKER_CONSTRAINTS. Live
+            # checks no balance and overdrew on 24.9% of days in Universe B; IBKR
+            # would have rejected those orders. Retained as pending rather than
+            # dropped, so a rejected order can still fill if cash frees up inside
+            # live's 4-day / 3-attempt window — which is what a bot retrying a
+            # rejection actually does.
+            required = stake + commission
+            if cash < required:
+                c['refused_insufficient_cash'] += 1
+                order['attempts'] += 1
+                still_pending.append(order)
+                continue
 
             # Live substitutes 0.05 and FILLS, flagging the trade. Run A refused.
             stdev = order['stdev_20']
@@ -305,7 +364,7 @@ def run_sim(symbols, start_date, end_date, params, label=""):
                 'stop_loss': buy - buy * stdev * sl_mult,
                 'take_profit': buy * (1 + tp_pct) if tp_pct > 0 else 0.0,
                 'trailing_stop': buy - buy * stdev * sl_mult,
-                'peak_price': buy,
+                'peak_price': buy, 'last_mark': buy,
                 'rsi_at_entry': order['rsi'], 'vol_at_entry': order['vol_ratio'],
                 'stdev_20': stdev, 'stdev_fallback': contaminated,
                 'from_queue': order['from_queue'],
@@ -318,10 +377,24 @@ def run_sim(symbols, start_date, end_date, params, label=""):
         pending = still_pending
 
         # ---- 4. mark equity at today's close -----------------------------
+        # A held symbol with no bar today used to be skipped entirely, which dropped
+        # its whole market value from equity for that day and understated both the
+        # curve and the drawdown, with no counter to reveal it. Carry the last known
+        # close forward instead — a halted or untraded symbol retains its last mark,
+        # it does not become worthless — and count the occurrences.
+        if cash < 0:
+            raise AssertionError(
+                f"Cash went negative (${cash:.2f}) on {day_str}. The broker funding "
+                f"constraint should make this unreachable; see "
+                f"MODELLED_BROKER_CONSTRAINTS."
+            )
         equity = cash
         for sym, pos in positions.items():
             if day in data[sym].index:
-                equity += pos['shares'] * float(data[sym].loc[day, 'Close'])
+                pos['last_mark'] = float(data[sym].loc[day, 'Close'])
+            else:
+                c['equity_marks_carried_forward'] += 1
+            equity += pos['shares'] * pos['last_mark']
         history.append({'date': day_str, 'equity': round(equity, 2),
                         'cash': round(cash, 2), 'positions': len(positions),
                         'queue_size': len(queue), 'pending': len(pending)})
@@ -396,20 +469,26 @@ def run_sim(symbols, start_date, end_date, params, label=""):
             kept.append(q)
         queue = kept
 
-        # De-duplicate by symbol, keeping the strongest, then evict to max size on
-        # live's ranking key: highest confluence, then smallest drift, then oldest.
-        best = {}
+        # De-duplicate keeping the FIRST entry per symbol and rank on
+        # (-confluence, date_added), both exactly as live does. The sim previously
+        # kept the highest-confluence duplicate and ranked with |drift| as the
+        # second key; identical in most cases, but it selected a different survivor
+        # whenever a symbol re-signalled at higher confluence, and a different
+        # eviction victim whenever confluence tied. Drift belongs only in the
+        # promotion test, not in the ordering.
+        seen_syms = set()
+        deduped = []
         for q in queue:
-            cur = best.get(q['symbol'])
-            if cur is None or q['confluence'] > cur['confluence']:
-                best[q['symbol']] = q
-        queue = list(best.values())
-        queue.sort(key=lambda q: (-q['confluence'],
-                                  abs(_drift(data, q, day)),
-                                  q['date_added']))
-        if len(queue) > LIVE_QUEUE_MAX_SIZE:
-            c['queue_evicted_size'] += len(queue) - LIVE_QUEUE_MAX_SIZE
-            queue = queue[:LIVE_QUEUE_MAX_SIZE]
+            if q['symbol'] in seen_syms:
+                continue
+            seen_syms.add(q['symbol'])
+            deduped.append(q)
+        queue = deduped
+        queue.sort(key=lambda q: (-q['confluence'], q['date_added']))
+        queue_max_size = params.get('queue_max_size', LIVE_QUEUE_MAX_SIZE)
+        if len(queue) > queue_max_size:
+            c['queue_evicted_size'] += len(queue) - queue_max_size
+            queue = queue[:queue_max_size]
 
         if queue and len(positions) + len(pending) < max_positions:
             for q in queue[:]:
@@ -443,9 +522,7 @@ def run_sim(symbols, start_date, end_date, params, label=""):
     for sym, pos in positions.items():
         df = data[sym]
         i = df.index.get_indexer([last_day])[0]
-        if i < 0:
-            i = len(df) - 1
-        mark = float(df['Close'].iloc[i])
+        mark = float(df['Close'].iloc[i]) if i >= 0 else pos['last_mark']
         value = pos['shares'] * mark
         open_value += value
         open_positions.append({
@@ -473,12 +550,11 @@ def run_sim(symbols, start_date, end_date, params, label=""):
         'symbols_requested': len(symbols),
         'label': label,
     })
-    if cash < 0:
-        raise AssertionError(
-            f"Cash went negative (${cash:.2f}). Live never checks a balance, but at "
-            f"{max_positions} slots x ${stake:.2f} it cannot overdraw — so this "
-            f"means the sizing or booking logic is wrong, not that live is."
-        )
+    # Solvency is now asserted on EVERY day inside the loop, not only here. The
+    # terminal-day-only version passed while Universe B ran a -$356 overdraft for
+    # 309 days, and its comment — "at 5 slots x $149 it cannot overdraw" — was
+    # simply false once realised losses accumulate: the stake is constant while
+    # equity falls, so 5 x $149 eventually exceeds the account.
     reconcile(closed, open_positions, capital, cash, open_value)
     return closed, history, c, open_positions
 
@@ -537,7 +613,13 @@ def _book(pos, exit_date, exit_price, reason, exit_proceeds):
         'from_queue': pos['from_queue'],
         'pnl': round(pnl, 6),
         'pnl_pct': round(pnl / invested * 100, 6),
+        # Gross P&L written INTO the record, not just aggregated in the summary.
+        # The gross/net split is the single most useful finding in this run, and
+        # summary-only fields cannot be audited or re-derived from the CSV — the
+        # computed-then-discarded class again.
+        'pnl_before_commission': round(pnl + pos['commission_paid'], 6),
         'win': 1 if pnl > 0 else 0,
+        'win_before_commission': 1 if (pnl + pos['commission_paid']) > 0 else 0,
     }
 
 def reconcile(closed, open_positions, starting_capital, final_cash, open_value,
@@ -588,10 +670,13 @@ def summarise(closed, history, counters, params, open_positions=()):
 
     Sizing is static $149 and does not compound, because that is what live does.
     The primary figures are therefore total dollar P&L and return on the notional
-    $1,000. `cagr_pct` is still reported for scale but is a NON-COMPOUNDING rate on
-    a fixed stake, so it is **not comparable to Run A's CAGR**, which was produced
-    under a compounding sizing rule Ares does not use. `return_basis` records which
-    regime produced the number so the two can never be tabulated as like for like.
+    $1,000. **`cagr_pct` is not emitted at all** — see the note at its former place
+    in `out`. `return_basis` and `comparable_to_run_a` record why, so these figures
+    cannot later be tabulated against Run A's as like for like.
+
+    Gross P&L before commission is a headline field rather than a derived one. It is
+    the most actionable number in the run: Universe A is gross-profitable and
+    commission-negative, which "the strategy loses money" conceals entirely.
 
     Open positions are not liquidated, since live has no end-of-sim analogue. They
     are excluded from every trade statistic and reported separately, with their
@@ -605,7 +690,6 @@ def summarise(closed, history, counters, params, open_positions=()):
     final = float(hist['equity'].iloc[-1]) if len(hist) else float(start)
     total_ret = (final - start) / start * 100
     years = len(hist) / 252 if len(hist) else 0
-    cagr = ((final / start) ** (1 / years) - 1) * 100 if years > 0 and final > 0 else 0.0
     mdd, mdd_i = max_drawdown(hist['equity']) if len(hist) else (0.0, None)
 
     # Daily-return Sharpe, zero risk-free, for scale rather than for ranking.
@@ -615,18 +699,30 @@ def summarise(closed, history, counters, params, open_positions=()):
 
     out = {
         'label': counters.get('label', ''),
+        # `cagr_pct` is DELIBERATELY ABSENT. Under a fixed non-compounding stake an
+        # annualised compound rate describes money this run never had, and a
+        # labelled number survives its caveat and gets quoted anyway — that is
+        # exactly the route by which "PF 2.41 over 1060 trades" reached Ares'
+        # README. Suppressing the field is the only durable form of the caveat.
+        # Run A's `cagr_pct` is left in place: it genuinely compounded, so the
+        # figure was valid there and ROADMAP.md quotes it.
         'return_basis': 'fixed_stake_non_compounding',
+        'cagr_suppressed_reason': (
+            'fixed non-compounding stake; an annualised compound rate would '
+            'describe capital this run never deployed'
+        ),
         'static_stake': counters.get('static_stake'),
-        'cagr_comparable_to_run_a': False,
+        'comparable_to_run_a': False,
         'start_capital': start, 'final_equity': round(final, 2),
         'total_return_pct': round(total_ret, 2),
-        'cagr_pct': round(cagr, 2),
         'open_positions': counters.get('open_positions', 0),
         'open_market_value': counters.get('open_market_value', 0.0),
         'unrealised_pnl': round(sum(p['unrealised_pnl'] for p in open_positions), 2),
         'max_drawdown_pct': round(mdd, 2),
-        'max_drawdown_date': (hist['equity'].index[mdd_i] and
-                              hist['date'].iloc[mdd_i]) if mdd_i is not None else None,
+        # `and` on a RangeIndex position returned 0 rather than the date whenever the
+        # worst drawdown sat at row 0, because index[0] is falsy. Index positionally.
+        'max_drawdown_date': (hist['date'].iloc[mdd_i]
+                              if mdd_i is not None and len(hist) else None),
         'sharpe': round(sharpe, 2),
         'years': round(years, 2),
         'trading_days': len(hist),
@@ -638,7 +734,10 @@ def summarise(closed, history, counters, params, open_positions=()):
         'signals_total', 'entries_filled', 'signals_queued', 'entries_from_queue',
         'queue_promotions_attempted', 'queue_rejected_drift', 'queue_expired_age',
         'queue_evicted_size', 'pending_expired',
-        'pending_fill_attempts_exhausted', 'stdev_fallback_fills') if k in counters})
+        'pending_fill_attempts_exhausted', 'stdev_fallback_fills',
+        'refused_insufficient_cash', 'pending_dropped_already_held',
+        'pending_dropped_no_slot', 'equity_marks_carried_forward')
+        if k in counters})
 
     if df.empty:
         out.update({'trades': 0, 'win_rate_pct': 0.0, 'profit_factor': 0.0,
@@ -671,6 +770,22 @@ def summarise(closed, history, counters, params, open_positions=()):
         'pnl_total': round(float(df['pnl'].sum()), 2),
         'pnl_excl_commissions': round(
             float(df['pnl'].sum()) + float(df['commission_paid'].sum()), 2),
+        # The three headline lines: gross edge, friction, what survives.
+        'gross_pnl_before_commission': round(float(df['pnl_before_commission'].sum()), 2),
+        'commission_total': round(float(df['commission_paid'].sum()), 2),
+        'net_pnl_after_commission': round(float(df['pnl'].sum()), 2),
+        'commission_per_trade': round(float(df['commission_paid'].mean()), 3),
+        'gross_edge_per_trade': round(float(df['pnl_before_commission'].mean()), 3),
+        # Only meaningful when the gross edge is positive; a ratio against a
+        # negative denominator would read as a small percentage and imply the
+        # opposite of what it means.
+        'commission_pct_of_gross_profit': (
+            round(float(df['commission_paid'].sum())
+                  / float(df['pnl_before_commission'].sum()) * 100, 1)
+            if float(df['pnl_before_commission'].sum()) > 0 else None),
+        'gross_profitable': bool(float(df['pnl_before_commission'].sum()) > 0),
+        'win_rate_before_commission_pct': round(
+            float(df['win_before_commission'].mean()) * 100, 2),
         'avg_holding_days': round(float(df['holding_days'].mean()), 1),
         'scaled_out_count': int(df['scaled_out'].sum()),
         'from_queue_count': int(df['from_queue'].sum()),

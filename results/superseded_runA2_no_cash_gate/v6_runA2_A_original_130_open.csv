@@ -1,6 +1,6 @@
 symbol,strategy,entry_date,entry_price,shares,mark_price,market_value,cost_basis,scaled_out,scale_out_proceeds,unrealised_pnl,stdev_fallback
-PLD,momentum_breakout,2025-10-16,120.209846,0.61974957,138.579742,85.88,150.0,True,87.241974,23.13,False
-DXCM,momentum_breakout,2026-08-04,87.227139,1.70818396,90.139999,153.98,150.0,False,0.0,3.98,False
+ABBV,momentum_breakout,2026-06-26,243.770125,0.61123159,259.98999,158.91,150.0,False,0.0,8.91,False
+JNJ,momentum_breakout,2026-06-29,252.199352,0.59080247,271.190002,160.22,150.0,False,0.0,10.22,False
 FCX,momentum_breakout,2026-08-24,78.468389,1.89885381,72.470001,137.61,150.0,False,0.0,-12.39,False
-MRK,momentum_breakout,2026-08-25,150.26402,0.99158801,148.980606,147.73,150.0,False,0.0,-2.27,False
+XLV,momentum_breakout,2026-08-25,173.95868,0.85652524,171.015503,146.48,150.0,False,0.0,-3.52,False
 FTNT,momentum_breakout,2026-08-28,172.752582,0.8625052,161.850006,139.6,150.0,False,0.0,-10.4,False
