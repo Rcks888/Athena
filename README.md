@@ -47,29 +47,57 @@ Athena simulates Ares trading logic on historical data to generate ML training d
 
 ---
 
+## V6 Run A — the current result
+
+**[→ Full report: ATHENA_V6_RUN_A.md](ATHENA_V6_RUN_A.md)**
+
+The first causal backtest, run 2026-09-22 with divergence removed from the
+decision set to match what live Ares structurally does. Frozen parameters, no
+re-optimisation.
+
+| | Universe A (130) | Universe B (98) | SPY B&H |
+|---|---|---|---|
+| $1,000 → | **$843.37** | **$724.49** | $1,856.64 |
+| CAGR | **−3.40%** | **−6.33%** | +13.39% |
+| Max drawdown | −30.23% | −37.76% | −24.50% |
+| Profit factor | 0.853 | 0.844 | — |
+| Expectancy/trade | −$1.04 | −$1.16 | — |
+
+The V1-V5 edge does not survive removal of the look-ahead. Excluding commissions
+entirely still yields only ~+3.5%/yr against SPY's +13.39%, so this is not a
+friction problem.
+
+Run A also surfaced a **new defect**: only 12.2% of its entries satisfy live Ares'
+52-week-high gate, because Athena's `_check_entry` never implemented it. Run A is
+causal, but it is not yet "as-live" on entries — see the report's limitations.
+
 ## Purpose
 
-1. **Backtest** Ares strategies on 5 years of historical data (130 S&P 500 stocks)
-2. **Generate** 800-1000+ simulated trades with full feature data for ML training
-3. **Optimize** parameters through iterative testing (V1 → V2 → V3 → V4)
-4. **Simulate** real portfolio performance with capital management, scale-out, and queuing
+1. **Measure** Ares strategies causally on 5 years of snapshotted data
+2. **Snapshot** the data so a run is reproducible
+3. **Prove** the absence of look-ahead with tests, not with prose
+
+Note what is no longer here: "optimize parameters through iterative testing."
+Re-running the same window and keeping the better number is how V1-V5's figure was
+manufactured. Any future re-fit needs a real holdout.
 
 ## Quick Start
 
 ```bash
-pip install yfinance pandas pandas_ta numpy scikit-learn
+# Dependencies live in vendor/, pinned to live Ares' exact versions.
+# Athena's venv/ has no pip; see PROVENANCE.md.
+python3 -m pip install --target vendor 'numpy==2.2.6' 'pandas==3.0.5' \
+    'pandas_ta==0.4.71b0' 'yfinance==1.6.0'
 
-# Individual strategy backtests
-python3 run_backtest.py          # V1: Original parameters
-python3 run_backtest_v2.py       # V2: Optimized TP/SL
-python3 run_backtest_v3.py       # V3: No TP, trailing only
-
-# Full portfolio simulation
-python3 run_backtest_v4.py       # V4: $1K capital, scale-out, queue
-
-# Capital comparison
-python3 run_backtest_v4_compare.py  # $1K vs $2.5K vs $5K vs $10K
+PYTHONPATH=vendor python3 snapshot_data.py      # idempotent; data is committed
+PYTHONPATH=vendor python3 validate_v6.py        # 16 causality/accounting checks
+PYTHONPATH=vendor python3 run_backtest_v6.py    # Run A
 ```
+
+`run_backtest.py`, `_v2`, `_v3`, `_v4`, `_v4_compare` and `_v5` **refuse to
+execute.** They are retained as the historical record of what produced V1-V5 and
+are not repaired — a half-fixed simulator emitting plausible numbers is more
+dangerous than a broken one.
 
 ## Backtest Results Summary
 
@@ -221,35 +249,32 @@ V5 addresses all concerns with realistic friction and a different stock universe
 ```
 Athena/
 ├── engine/
-│   ├── data_feed.py       # yfinance 5yr historical data
-│   ├── indicators.py      # Shared with Ares (RSI 21, MACD, regime, divergence)
-│   ├── signals.py         # Shared with Ares (entry logic)
-│   ├── backtester.py      # Per-trade simulation (V1, V2, V3)
-│   ├── portfolio_sim.py   # Full portfolio simulation (V4)
-│   └── portfolio_sim_v5.py # Realistic sim with friction (V5)
+│   ├── data_feed.py        # Snapshot-only loader; raises rather than skipping
+│   ├── universe.py         # Corrected universes + KNOWN_UNAVAILABLE exclusions
+│   ├── indicators.py       # RSI 21, MACD, regime, CAUSAL divergence (must-fix 1)
+│   ├── portfolio_sim_v6.py # V6 — the only supported simulator
+│   ├── signals.py          # Live-shaped entry logic (not used by V6; see report)
+│   ├── backtester.py       # RETIRED — history of V1/V2/V3, not repaired
+│   ├── portfolio_sim.py    # RETIRED — history of V4, not repaired
+│   └── portfolio_sim_v5.py # RETIRED — history of V5, not repaired
 ├── config/
-│   ├── strategy_params.json     # V1 base params
-│   ├── strategy_params_v2.json  # V2: TP 18%, TS 10%, no trend_cont
-│   ├── strategy_params_v3.json  # V3: No TP, trailing only
-│   ├── strategy_params_v4.json  # V4: Portfolio sim params
-│   └── strategy_params_v5.json  # V5: Realistic friction params
+│   ├── strategy_params_v6.json  # V6 Run A: frozen params, dead keys removed
+│   └── strategy_params{,_v2..v5}.json  # historical, contaminated
+├── data/
+│   ├── ohlcv/                   # COMMITTED snapshot, 217 symbols (not ignored)
+│   └── snapshot_manifest.json   # provenance: versions, date, rows, spans
 ├── results/
-│   ├── backtest_trades.csv       # V1: 1,060 trades
-│   ├── backtest_v2_trades.csv    # V2: 930 trades
-│   ├── backtest_v3_trades.csv    # V3: 829 trades
-│   ├── backtest_v4_trades.csv    # V4: 223 trades (portfolio sim)
-│   ├── backtest_v4_portfolio.csv # V4: daily portfolio value
-│   ├── backtest_v5_realistic.csv # V5: 204 trades (with friction)
-│   ├── backtest_v5_midcap.csv    # V5: 311 trades (different universe)
-│   └── backtest_v5_portfolio.csv # V5: daily portfolio value
-├── data/ohlcv/            # Cached historical CSV (gitignored)
-├── models/                # Future ML models
-├── run_backtest.py        # V1 backtest
-├── run_backtest_v2.py     # V2 backtest + V1 comparison
-├── run_backtest_v3.py     # V3 backtest + V1/V2/V3 comparison
-├── run_backtest_v4.py     # V4 full portfolio simulation
-├── run_backtest_v4_compare.py  # Capital comparison ($1K-$10K)
-└── run_backtest_v5.py     # V5 realistic (friction + universe sensitivity)
+│   ├── v6_runA_A_original_130_*.csv   # Run A, universe A
+│   ├── v6_runA_B_midcap_98_*.csv      # Run A, universe B
+│   ├── v6_runA_summary.json           # Run A headline + params + benchmarks
+│   └── backtest_v{,2,3,4,5}_*.csv     # V1-V5, retained as history
+├── vendor/                 # Pinned deps matching live Ares (gitignored)
+├── snapshot_data.py        # Freeze the OHLCV input
+├── validate_v6.py          # 16 causality + accounting checks
+├── run_backtest_v6.py      # Run A
+├── ATHENA_V6_RUN_A.md      # The honest numbers and their limitations
+├── PROVENANCE.md           # Environment traps; why vendor/ pins are load-bearing
+└── run_backtest{,_v2,_v3,_v4,_v4_compare,_v5}.py   # ALL REFUSE TO RUN
 ```
 
 ## Relationship to Ares
@@ -258,7 +283,10 @@ Athena/
 Athena (wisdom)                    Ares (action)
   ├── Backtests strategies     ──→ Validates approach
   ├── Generates ML data        ──→ Trains prediction model
-  ├── Finds optimal parameters ──→ Updates strategy_params.json
+  ├── ~~Finds optimal parameters~~ ──→ ~~Updates strategy_params.json~~
+  │     RETRACTED. Parameters were selected under a backtest later found
+  │     contaminated by look-ahead. The live sample is the out-of-sample test.
+  │     Athena must not feed parameters to Ares without a real holdout.
   ├── Shadow analysis          ──→ Improves exit timing
   ├── Scale-out testing        ──→ Partial profit taking
   └── Capital planning         ──→ Position sizing

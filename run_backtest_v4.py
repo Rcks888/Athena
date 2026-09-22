@@ -3,6 +3,13 @@
 $1,000 starting capital, 5 max positions, scale-out, watchlist queue.
 5-year simulation (Sep 2021 - Sep 2026).
 """
+raise SystemExit(
+    "RETIRED 2026-09-22 — results contaminated by look-ahead bias in the "
+    "divergence detector (indicators.py swing confirmation). This engine is "
+    "kept for history only and must not be re-run. See Ares/ROADMAP.md, "
+    "'Athena audit — completed 2026-09-22'. Use V6 (Run A)."
+)
+
 from engine.data_feed import download_universe
 from engine.portfolio_sim import run_portfolio_sim, print_portfolio_summary, load_params
 from pathlib import Path

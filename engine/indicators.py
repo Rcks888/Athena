@@ -1,7 +1,35 @@
+"""Athena indicators.
+
+MUST-FIX 1 (the defect that contaminated V1-V5) is applied here.
+
+`_find_swing_highs` / `_find_swing_lows` compare `series.iloc[i]` against
+`series.iloc[i + j]` for j = 1..window. A pivot at bar `i` is therefore not
+knowable until bar `i + window`. V1-V5 wrote the divergence flag back onto bar
+`i` and then used it as an exit on bar `i` — selling at a confirmed local top
+with hindsight. That single back-dating produced ~96% of V5's dollar P&L.
+
+The pivot search is unchanged; what changed is *where the flag is written*. A
+divergence is now stamped on the bar at which both constituent pivots have
+actually closed, `max(price_pivot, rsi_pivot) + window`. No bar ever carries
+information from its own future.
+
+Side effect worth stating: this also repairs the inverse defect in the live
+system. The pivot loop stops at `len - window - 1`, so under the old code the
+highest index that could ever receive a flag was `len - 6`, while live Ares reads
+index `len - 1` — making `latest['bearish_div']`, `latest['bullish_div']` and
+both `latest['hidden_*_div']` structurally always False in production. With
+confirmation-stamping, a pivot at `len - 6` lands its flag on `len - 1`, so the
+latest bar can carry a flag. Athena V6 Run A does not rely on this: Run A removes
+divergence from the decision set entirely, to match what live Ares structurally
+does today. The repair exists so that Run B is possible later.
+"""
 import pandas as pd
 import pandas_ta as ta
 import json
 from pathlib import Path
+
+# Bars either side of a candidate pivot that must close before it is a pivot.
+SWING_WINDOW = 5
 
 def load_params():
     config_path = Path(__file__).parent.parent / "config" / "strategy_params.json"
@@ -71,7 +99,7 @@ def detect_market_regime(df, params):
 
     return result
 
-def _find_swing_lows(series, window=5):
+def _find_swing_lows(series, window=SWING_WINDOW):
     """Find local minima indices."""
     lows = []
     for i in range(window, len(series) - window):
@@ -86,7 +114,7 @@ def _find_swing_lows(series, window=5):
             lows.append(i)
     return lows
 
-def _find_swing_highs(series, window=5):
+def _find_swing_highs(series, window=SWING_WINDOW):
     """Find local maxima indices."""
     highs = []
     for i in range(window, len(series) - window):
@@ -101,98 +129,63 @@ def _find_swing_highs(series, window=5):
             highs.append(i)
     return highs
 
-def detect_bullish_divergence(df, lookback=21):
-    """Regular bullish: price lower low + RSI higher low → reversal UP."""
+def _scan_divergence(df, lookback, find_pivots, price_cmp, rsi_cmp,
+                     window=SWING_WINDOW):
+    """Generic causal divergence scan. Shared by all four detectors.
+
+    V1-V5 had this logic copy-pasted four times, which is how the same
+    back-dating defect ended up in four places and had to be found four times.
+
+    `price_cmp(curr, prev)` and `rsi_cmp(curr, prev)` define which of the four
+    divergences is being scanned. The flag is written at the confirmation bar —
+    `max(price_pivot, rsi_pivot) + window` — never at the pivot itself.
+    """
     result = pd.Series(False, index=df.index)
     if len(df) < lookback * 3:
         return result
 
-    price_lows = _find_swing_lows(df['Close'])
-    rsi_lows = _find_swing_lows(df['rsi'])
+    price_pivots = find_pivots(df['Close'], window)
+    rsi_pivots = find_pivots(df['rsi'], window)
+    n = len(df)
 
-    for i in range(1, len(price_lows)):
-        p_prev, p_curr = price_lows[i - 1], price_lows[i]
-        if p_curr - p_prev > lookback * 2 or p_curr - p_prev < 3:
+    for i in range(1, len(price_pivots)):
+        p_prev, p_curr = price_pivots[i - 1], price_pivots[i]
+        gap = p_curr - p_prev
+        if gap > lookback * 2 or gap < 3:
             continue
-        if df['Close'].iloc[p_curr] < df['Close'].iloc[p_prev]:
-            r_prev_candidates = [r for r in rsi_lows if abs(r - p_prev) <= 3]
-            r_curr_candidates = [r for r in rsi_lows if abs(r - p_curr) <= 3]
-            if r_prev_candidates and r_curr_candidates:
-                r_prev = r_prev_candidates[0]
-                r_curr = r_curr_candidates[0]
-                if df['rsi'].iloc[r_curr] > df['rsi'].iloc[r_prev]:
-                    result.iloc[p_curr] = True
+        if not price_cmp(df['Close'].iloc[p_curr], df['Close'].iloc[p_prev]):
+            continue
+
+        r_prev = next((r for r in rsi_pivots if abs(r - p_prev) <= 3), None)
+        r_curr = next((r for r in rsi_pivots if abs(r - p_curr) <= 3), None)
+        if r_prev is None or r_curr is None:
+            continue
+        if not rsi_cmp(df['rsi'].iloc[r_curr], df['rsi'].iloc[r_prev]):
+            continue
+
+        # MUST-FIX 1. Both pivots must have closed before the flag can exist.
+        confirm_at = max(p_curr, r_curr) + window
+        if confirm_at < n:
+            result.iloc[confirm_at] = True
 
     return result
+
+_LT = lambda curr, prev: curr < prev
+_GT = lambda curr, prev: curr > prev
+
+def detect_bullish_divergence(df, lookback=21):
+    """Regular bullish: price lower low + RSI higher low -> reversal UP."""
+    return _scan_divergence(df, lookback, _find_swing_lows, _LT, _GT)
 
 def detect_bearish_divergence(df, lookback=21):
-    """Regular bearish: price higher high + RSI lower high → reversal DOWN."""
-    result = pd.Series(False, index=df.index)
-    if len(df) < lookback * 3:
-        return result
-
-    price_highs = _find_swing_highs(df['Close'])
-    rsi_highs = _find_swing_highs(df['rsi'])
-
-    for i in range(1, len(price_highs)):
-        p_prev, p_curr = price_highs[i - 1], price_highs[i]
-        if p_curr - p_prev > lookback * 2 or p_curr - p_prev < 3:
-            continue
-        if df['Close'].iloc[p_curr] > df['Close'].iloc[p_prev]:
-            r_prev_candidates = [r for r in rsi_highs if abs(r - p_prev) <= 3]
-            r_curr_candidates = [r for r in rsi_highs if abs(r - p_curr) <= 3]
-            if r_prev_candidates and r_curr_candidates:
-                r_prev = r_prev_candidates[0]
-                r_curr = r_curr_candidates[0]
-                if df['rsi'].iloc[r_curr] < df['rsi'].iloc[r_prev]:
-                    result.iloc[p_curr] = True
-
-    return result
+    """Regular bearish: price higher high + RSI lower high -> reversal DOWN."""
+    return _scan_divergence(df, lookback, _find_swing_highs, _GT, _LT)
 
 def detect_hidden_bullish_divergence(df, lookback=21):
-    """Hidden bullish: price higher low + RSI lower low → continuation UP."""
-    result = pd.Series(False, index=df.index)
-    if len(df) < lookback * 3:
-        return result
-
-    price_lows = _find_swing_lows(df['Close'])
-    rsi_lows = _find_swing_lows(df['rsi'])
-
-    for i in range(1, len(price_lows)):
-        p_prev, p_curr = price_lows[i - 1], price_lows[i]
-        if p_curr - p_prev > lookback * 2 or p_curr - p_prev < 3:
-            continue
-        if df['Close'].iloc[p_curr] > df['Close'].iloc[p_prev]:
-            r_prev_candidates = [r for r in rsi_lows if abs(r - p_prev) <= 3]
-            r_curr_candidates = [r for r in rsi_lows if abs(r - p_curr) <= 3]
-            if r_prev_candidates and r_curr_candidates:
-                r_prev = r_prev_candidates[0]
-                r_curr = r_curr_candidates[0]
-                if df['rsi'].iloc[r_curr] < df['rsi'].iloc[r_prev]:
-                    result.iloc[p_curr] = True
-
-    return result
+    """Hidden bullish: price higher low + RSI lower low -> continuation UP."""
+    return _scan_divergence(df, lookback, _find_swing_lows, _GT, _LT)
 
 def detect_hidden_bearish_divergence(df, lookback=21):
-    """Hidden bearish: price lower high + RSI higher high → continuation DOWN."""
-    result = pd.Series(False, index=df.index)
-    if len(df) < lookback * 3:
-        return result
+    """Hidden bearish: price lower high + RSI higher high -> continuation DOWN."""
+    return _scan_divergence(df, lookback, _find_swing_highs, _LT, _GT)
 
-    price_highs = _find_swing_highs(df['Close'])
-    rsi_highs = _find_swing_highs(df['rsi'])
-
-    for i in range(1, len(price_highs)):
-        p_prev, p_curr = price_highs[i - 1], price_highs[i]
-        if p_curr - p_prev > lookback * 2 or p_curr - p_prev < 3:
-            continue
-        if df['Close'].iloc[p_curr] < df['Close'].iloc[p_prev]:
-            r_prev_candidates = [r for r in rsi_highs if abs(r - p_prev) <= 3]
-            r_curr_candidates = [r for r in rsi_highs if abs(r - p_curr) <= 3]
-            if r_prev_candidates and r_curr_candidates:
-                r_prev = r_prev_candidates[0]
-                r_curr = r_curr_candidates[0]
-                if df['rsi'].iloc[r_curr] > df['rsi'].iloc[r_prev]:
-                    result.iloc[p_curr] = True
-
-    return result

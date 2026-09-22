@@ -1,0 +1,6 @@
+exit_reason,trades,total_pnl,avg_pnl,avg_pnl_pct,win_rate_pct,pct_of_total_pnl
+trailing_stop,59,520.222,8.817,6.534,59.3,-320.7
+emotional_extreme,2,115.672,57.836,51.769,100.0,-71.3
+end_of_sim,5,47.005,9.401,8.838,80.0,-29.0
+mean_reversion_complete,1,28.095,28.095,14.099,100.0,-17.3
+stop_loss,89,-873.214,-9.811,-6.871,0.0,538.3

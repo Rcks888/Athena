@@ -1,4 +1,11 @@
 """Athena V4 — Capital Comparison: $1K/5slots vs $2.5K/8slots vs $5K/10slots"""
+raise SystemExit(
+    "RETIRED 2026-09-22 — results contaminated by look-ahead bias in the "
+    "divergence detector (indicators.py swing confirmation). This engine is "
+    "kept for history only and must not be re-run. See Ares/ROADMAP.md, "
+    "'Athena audit — completed 2026-09-22'. Use V6 (Run A)."
+)
+
 import json
 from pathlib import Path
 from engine.data_feed import download_universe

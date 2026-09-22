@@ -7,6 +7,13 @@ Addresses all reviewer concerns:
 4. Full 5-year period (Sep 2021 - Sep 2026) with V3 logic
 5. Tests TWO universes: original 130 stocks + different 100 mid-caps
 """
+raise SystemExit(
+    "RETIRED 2026-09-22 — results contaminated by look-ahead bias in the "
+    "divergence detector (indicators.py swing confirmation). This engine is "
+    "kept for history only and must not be re-run. See Ares/ROADMAP.md, "
+    "'Athena audit — completed 2026-09-22'. Use V6 (Run A)."
+)
+
 import json
 from pathlib import Path
 from engine.data_feed import download_universe

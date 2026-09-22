@@ -1,4 +1,8 @@
 venv/
-data/ohlcv/
+vendor/
 __pycache__/
 *.pyc
+
+# data/ohlcv/ is deliberately NOT ignored from V6 onward. yfinance adjusts
+# retroactively, so an un-committed cache makes a backtest unreproducible —
+# which is why V1-V5 cannot be re-run. See data/snapshot_manifest.json.

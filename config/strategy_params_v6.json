@@ -1,0 +1,31 @@
+{
+    "version": "6.0_run_a_as_live",
+    "_comment": "Athena V6 Run A. Parameters are FROZEN at the values live Ares runs. No re-optimisation: this file measures what tp_momentum 0.18 and trailing_stop_pct 0.10 actually do. The six dead keys carried by V1-V5 (rsi_source, rsi_overbought, rsi_midline, rsi_extreme_low, macd_threshold, lookback_days) are removed — each shadowed a hardcoded literal, so tuning them did nothing.",
+
+    "rsi_length": 21,
+    "rsi_oversold": 30,
+    "rsi_extreme_high": 90,
+    "min_vol_ratio": 1.5,
+    "sma_trend_length": 50,
+    "sma_slope_threshold": 0.001,
+    "min_confluence": 2,
+
+    "stop_loss_multiplier": 2.0,
+    "trailing_stop_pct": 0.10,
+    "tp_momentum": 0.18,
+    "tp_reversal": 0.10,
+    "disable_trend_continuation": true,
+    "scale_out": true,
+    "scale_out_pct": 0.50,
+
+    "starting_capital": 1000,
+    "max_positions": 5,
+    "cash_reserve_pct": 0.25,
+    "queue_max_age_days": 5,
+
+    "slippage_pct": 0.001,
+    "commission_per_trade": 1.00,
+
+    "divergence_in_decision_set": false,
+    "_divergence_comment": "Run A. Divergence contributes to no entry, no exit and no rejection, matching what live Ares structurally does today: the pivot loop can never flag the latest bar, so all four divergence reads are always False in production. Run B would set this true with flags confirmed at i+5. Run B is optional, comes later, and must not be used to manufacture a nicer number."
+}

@@ -1,6 +1,13 @@
 """Athena — Ares V2.1 Backtesting Engine
 Simulates Ares trading logic on historical data to generate ML training data.
 """
+raise SystemExit(
+    "RETIRED 2026-09-22 — results contaminated by look-ahead bias in the "
+    "divergence detector (indicators.py swing confirmation). This engine is "
+    "kept for history only and must not be re-run. See Ares/ROADMAP.md, "
+    "'Athena audit — completed 2026-09-22'. Use V6 (Run A)."
+)
+
 from engine.data_feed import download_universe
 from engine.backtester import run_backtest, save_results, print_summary
 

@@ -6,6 +6,13 @@ Changes from V2:
   - Exits: trailing stop, bearish divergence, emotional extreme, stop loss
   - Trend continuation: still disabled
 """
+raise SystemExit(
+    "RETIRED 2026-09-22 — results contaminated by look-ahead bias in the "
+    "divergence detector (indicators.py swing confirmation). This engine is "
+    "kept for history only and must not be re-run. See Ares/ROADMAP.md, "
+    "'Athena audit — completed 2026-09-22'. Use V6 (Run A)."
+)
+
 import json
 import pandas as pd
 from pathlib import Path
