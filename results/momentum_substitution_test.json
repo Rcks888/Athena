@@ -1,0 +1,227 @@
+{
+  "registered": "Ares/ROADMAP.md 2026-09-22",
+  "window": [
+    "2021-09-01",
+    "2026-09-01"
+  ],
+  "alpha_level": 0.05,
+  "r2_thresholds": {
+    "momentum_beta": 0.5,
+    "idiosyncratic": 0.3
+  },
+  "factor_manifest": "2026-09-22T08:48:09+00:00",
+  "universes": {
+    "A_original_130": {
+      "label": "Universe A (130 mega-cap)",
+      "n_months": 59,
+      "first_month": "2021-10",
+      "last_month": "2026-08",
+      "exposure": {
+        "mean_exposure": 0.6400709932609964,
+        "median_exposure": 0.6695591737446211,
+        "max_exposure": 0.9863515936521529,
+        "pct_days_fully_idle": 2.2562449637389204
+      },
+      "idle_cash": {
+        "total_interest": 50.144961767616465,
+        "mean_idle_cash": 330.1451490733279,
+        "min_idle_cash": 10.2,
+        "bil_total_return_pct": 19.334422538578643,
+        "days": 1241
+      },
+      "regressions": {
+        "mtum": {
+          "regressor": "MTUM excess return",
+          "n": 59,
+          "alpha_monthly": -0.006271281719265058,
+          "alpha_annualised_pct": -7.27131717742211,
+          "alpha_se": 0.004808188571411045,
+          "alpha_t": -1.3042919648687248,
+          "alpha_p": 0.19737632252984616,
+          "beta": 0.3910263345874128,
+          "beta_se": 0.08014804668536729,
+          "beta_t": 4.878800554209924,
+          "beta_p": 8.956319205832841e-06,
+          "r_squared": 0.29457798273443625,
+          "resid_sd_monthly": 0.03652949940582389,
+          "alpha_se_hac3": 0.005034186700558831,
+          "alpha_p_hac3": 0.21795662402113347,
+          "beta_se_hac3": 0.07064312123694273,
+          "beta_p_hac3": 8.18668005386769e-07,
+          "r2_ci95_low": 0.1314147689460883,
+          "r2_ci95_high": 0.48827791888239236,
+          "p_r2_above_0p3": 0.5044,
+          "p_r2_above_0p5": 0.0186,
+          "n_boot": 10000,
+          "verdict": "POSSIBLE_IDIOSYNCRATIC",
+          "threshold_margin": 0.005422017265563739,
+          "verdict_fragile": true,
+          "verdict_detail": "R2 0.295 < 0.3 and alpha is not significantly negative (p=0.197). The single pre-registered slot study becomes justified.",
+          "beta_on_deployed_capital": 0.6109108812996424
+        },
+        "qqq_spy": {
+          "regressor": "QQQ - SPY",
+          "n": 59,
+          "alpha_monthly": -0.0035473103096802967,
+          "alpha_annualised_pct": -4.174696088874175,
+          "alpha_se": 0.005557599332731275,
+          "alpha_t": -0.6382810449807967,
+          "alpha_p": 0.5258469800709662,
+          "beta": 0.34470101757175275,
+          "beta_se": 0.21503243751813894,
+          "beta_t": 1.60301869592431,
+          "beta_p": 0.11445814439453184,
+          "r_squared": 0.0431372036345109,
+          "resid_sd_monthly": 0.04254456133051444,
+          "alpha_se_hac3": 0.00546529511468815,
+          "alpha_p_hac3": 0.5189056936423078,
+          "beta_se_hac3": 0.2201433608411543,
+          "beta_p_hac3": 0.12293025933622226,
+          "r2_ci95_low": 0.00020037222624455788,
+          "r2_ci95_high": 0.20340501026152016,
+          "p_r2_above_0p3": 0.0017,
+          "p_r2_above_0p5": 0.0,
+          "n_boot": 10000,
+          "verdict": "POSSIBLE_IDIOSYNCRATIC",
+          "threshold_margin": 0.2568627963654891,
+          "verdict_fragile": false,
+          "verdict_detail": "R2 0.043 < 0.3 and alpha is not significantly negative (p=0.526). The single pre-registered slot study becomes justified.",
+          "beta_on_deployed_capital": 0.53853560183315
+        }
+      },
+      "unfiltered_including_partial_month": {
+        "mtum": {
+          "n": 60,
+          "r_squared": 0.2953536916105882,
+          "beta": 0.3913432106607451,
+          "alpha_monthly": -0.00632542231262532,
+          "alpha_p": 0.1857532572535947,
+          "verdict": "POSSIBLE_IDIOSYNCRATIC"
+        },
+        "qqq_spy": {
+          "n": 60,
+          "r_squared": 0.04359697573561061,
+          "beta": 0.3464684077665466,
+          "alpha_monthly": -0.0036980833571757226,
+          "alpha_p": 0.501172167350536,
+          "verdict": "POSSIBLE_IDIOSYNCRATIC"
+        }
+      },
+      "exposure_adjusted": {
+        "raw_total_return_pct": -5.58,
+        "on_deployed_capital_pct": -8.72,
+        "gross_on_deployed_pct": 42.68,
+        "spy_total_return_pct": 85.55
+      }
+    },
+    "B_midcap_98": {
+      "label": "Universe B (98 mid-cap control)",
+      "n_months": 59,
+      "first_month": "2021-10",
+      "last_month": "2026-08",
+      "exposure": {
+        "mean_exposure": 0.5836588925217181,
+        "median_exposure": 0.6781717191256529,
+        "max_exposure": 0.999678965351189,
+        "pct_days_fully_idle": 9.99194198227236
+      },
+      "idle_cash": {
+        "total_interest": 35.656414859144036,
+        "mean_idle_cash": 258.6837066881547,
+        "min_idle_cash": 0.14,
+        "bil_total_return_pct": 19.334422538578643,
+        "days": 1241
+      },
+      "regressions": {
+        "mtum": {
+          "regressor": "MTUM excess return",
+          "n": 59,
+          "alpha_monthly": -0.019377959994887187,
+          "alpha_annualised_pct": -20.928532274983226,
+          "alpha_se": 0.007704006881328796,
+          "alpha_t": -2.515309279103974,
+          "alpha_p": 0.01473635456223965,
+          "beta": 0.4709551296661195,
+          "beta_se": 0.12841865372345967,
+          "beta_t": 3.6673420567099813,
+          "beta_p": 0.0005402071376143791,
+          "r_squared": 0.19090862645210127,
+          "resid_sd_monthly": 0.05853004943842602,
+          "alpha_se_hac3": 0.007968191246816253,
+          "alpha_p_hac3": 0.018183877300281592,
+          "beta_se_hac3": 0.1288129747595731,
+          "beta_p_hac3": 0.0005596868758050988,
+          "r2_ci95_low": 0.038439958232098385,
+          "r2_ci95_high": 0.40599950691192654,
+          "p_r2_above_0p3": 0.1601,
+          "p_r2_above_0p5": 0.002,
+          "n_boot": 10000,
+          "verdict": "INCONCLUSIVE",
+          "threshold_margin": 0.10909137354789872,
+          "verdict_fragile": false,
+          "verdict_detail": "R2 0.191 falls in [0.3, 0.5] or the alpha sign condition is not met (alpha=-0.01938, p=0.015). Report as inconclusive and STOP. Do not proceed to sweeps and do not re-cut the test.",
+          "beta_on_deployed_capital": 0.8069013180478445
+        },
+        "qqq_spy": {
+          "regressor": "QQQ - SPY",
+          "n": 59,
+          "alpha_monthly": -0.015971106778533677,
+          "alpha_annualised_pct": -17.568309698587438,
+          "alpha_se": 0.008412388845738918,
+          "alpha_t": -1.8985221762096074,
+          "alpha_p": 0.0626939028760709,
+          "beta": 0.3557533650649693,
+          "beta_se": 0.3254888253991212,
+          "beta_t": 1.0929818086035274,
+          "beta_p": 0.2789996653048563,
+          "r_squared": 0.02052783324201024,
+          "resid_sd_monthly": 0.06439855983784724,
+          "alpha_se_hac3": 0.008599027644542862,
+          "alpha_p_hac3": 0.06843520222011157,
+          "beta_se_hac3": 0.3616697553283852,
+          "beta_p_hac3": 0.32944877078664403,
+          "r2_ci95_low": 5.6924397473101517e-05,
+          "r2_ci95_high": 0.17124362953549147,
+          "p_r2_above_0p3": 0.0015,
+          "p_r2_above_0p5": 0.0,
+          "n_boot": 10000,
+          "verdict": "POSSIBLE_IDIOSYNCRATIC",
+          "threshold_margin": 0.27947216675798975,
+          "verdict_fragile": false,
+          "verdict_detail": "R2 0.021 < 0.3 and alpha is not significantly negative (p=0.063). The single pre-registered slot study becomes justified.",
+          "beta_on_deployed_capital": 0.6095227360075416
+        }
+      },
+      "unfiltered_including_partial_month": {
+        "mtum": {
+          "n": 60,
+          "r_squared": 0.18962876421124564,
+          "beta": 0.4689352723933585,
+          "alpha_monthly": -0.019032852615524756,
+          "alpha_p": 0.014790988392109128,
+          "verdict": "INCONCLUSIVE"
+        },
+        "qqq_spy": {
+          "n": 60,
+          "r_squared": 0.02027025647188918,
+          "beta": 0.3532964482903327,
+          "alpha_monthly": -0.015761511392836842,
+          "alpha_p": 0.06160751062129699,
+          "verdict": "POSSIBLE_IDIOSYNCRATIC"
+        }
+      },
+      "exposure_adjusted": {
+        "raw_total_return_pct": -57.32,
+        "on_deployed_capital_pct": -98.21,
+        "gross_on_deployed_pct": -46.24,
+        "spy_total_return_pct": 85.55
+      }
+    }
+  },
+  "caveats": [
+    "~2.5 trades/month makes monthly returns lumpy; 59 observations of a sparse, discontinuous return series is a low-power test.",
+    "Partial investment ATTENUATES beta. A beta of 0.4 at ~50% average exposure implies ~0.8 on deployed capital, so the raw beta understates the factor loading of the positions themselves.",
+    "Both universes are hindsight-selected, which FLATTERS any momentum loading: the symbol lists were drawn knowing which names did well.",
+    "Idle cash earns 0% in the simulator, so strategy returns are biased DOWN relative to a real account, which biases alpha down."
+  ]
+}

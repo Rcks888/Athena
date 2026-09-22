@@ -1,0 +1,53 @@
+{
+  "created_utc": "2026-09-22T08:48:09+00:00",
+  "purpose": "Frozen inputs for the pre-registered momentum substitution test",
+  "yfinance_version": "1.6.0",
+  "pandas_version": "3.0.5",
+  "period": "10y",
+  "auto_adjust": true,
+  "min_bars": 1200,
+  "series": {
+    "MTUM": {
+      "rows": 2512,
+      "first": "2016-09-22",
+      "last": "2026-09-21",
+      "purpose": "iShares MSCI USA Momentum Factor ETF \u2014 pre-registered momentum proxy",
+      "required_for_regression": true,
+      "file": "MTUM.csv"
+    },
+    "SPY": {
+      "rows": 1254,
+      "first": "2021-09-22",
+      "last": "2026-09-21",
+      "purpose": "S&P 500 ETF \u2014 benchmark and the short leg of QQQ - SPY",
+      "required_for_regression": true,
+      "file": "SPY.csv"
+    },
+    "QQQ": {
+      "rows": 1254,
+      "first": "2021-09-22",
+      "last": "2026-09-21",
+      "purpose": "Nasdaq-100 ETF \u2014 long leg of the QQQ - SPY momentum proxy",
+      "required_for_regression": true,
+      "file": "QQQ.csv"
+    },
+    "BIL": {
+      "rows": 2512,
+      "first": "2016-09-22",
+      "last": "2026-09-21",
+      "purpose": "SPDR Bloomberg 1-3 Month T-Bill ETF \u2014 risk-free and idle-cash proxy",
+      "required_for_regression": true,
+      "file": "BIL.csv"
+    },
+    "^IRX": {
+      "rows": 2512,
+      "first": "2016-09-21",
+      "last": "2026-09-21",
+      "purpose": "13-week T-bill discount rate \u2014 level cross-check only",
+      "required_for_regression": false,
+      "file": "_IRX.csv"
+    }
+  },
+  "failed": [],
+  "note": "Separate from snapshot_manifest.json on purpose: snapshot_universe rebuilds that file from its symbol list, so reusing it here would replace the 217-symbol provenance record. auto_adjust=True means these are total-return series, which is what the regression and the T-bill credit both require."
+}
