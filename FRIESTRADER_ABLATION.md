@@ -126,3 +126,120 @@ So the two outcomes are not symmetric:
   before meaning anything, and would not yet be grounds to fund.
 
 Stated before the run so neither outcome can be reinterpreted afterwards.
+
+---
+
+# RESULT — run 2026-09-24
+
+Gate applied verbatim from the pre-registration above. Both arms: **ADVERSE.**
+
+| | Arm M `high` (primary) | Arm M `medium` |
+|---|---|---|
+| Final equity from 1,000 | **1,054.88** (+5.49%) | 1,096.10 (+9.61%) |
+| Mean exposure | 46.5% | 28.5% |
+| Return on deployed capital | +11.80% | +33.77% |
+| **SPY total return, same window** | **+85.55%** | +85.55% |
+| **Net excess vs SPY (deployed)** | **−73.75%** | −51.78% |
+| Max drawdown | **−40.05%** | −24.59% |
+| Closed trades / still open | 140 / 4 | 137 / 4 |
+| Win rate | 36.4% | 35.0% |
+| alpha vs MTUM, annualised | −2.42% | −2.46% |
+| alpha 95% CI | [−21.03%, +20.14%] | [−13.70%, +10.10%] |
+| beta / R2 vs MTUM | +0.245 / **0.048** | +0.156 / 0.057 |
+| **Gate** | **ADVERSE** | **ADVERSE** |
+
+## The gate fired on excess, not on alpha — say so plainly
+
+Annualised alpha is **−2.42%**, which lands in the pre-registered INCONCLUSIVE band
+(−3% to −2%), *not* in ADVERSE. The ADVERSE verdict comes entirely from the
+net-excess-vs-SPY criterion, which the rule joins by OR.
+
+The MTUM regression is close to **uninformative** here and must not be quoted as
+though it were evidence: R2 = 0.048 means the momentum factor explains ~5% of monthly
+variance, and the alpha CI spans **41 percentage points**. Unlike Ares — beta 0.39 to
+0.47, R2 0.19 to 0.29 — this is not a momentum clone. The `abs()` on the 60-day move
+and the near-52-week-**low** branch mean the signal gate fires on notable moves in
+either direction, so the strategy is not factor-aligned.
+
+**Decisive finding is the raw comparison, not the regression.**
+
+## Realised P&L over five years is approximately zero
+
+Reconciliation is exact (`1000 + realised + unrealised = equity`, to the cent):
+
+| | Arm `high` | Arm `medium` |
+|---|---|---|
+| Closed P&L on residual quantity | **−827.45** | −517.60 |
+| Scale-out P&L from take-profit tiers | **+782.13** | +542.76 |
+| **Total realised, 5 years, 140 trades** | **−45.33** | **+25.16** |
+| Unrealised on the 4 open positions | +100.21 | +70.94 |
+
+**The entire reported gain is unrealised mark-to-market on four positions still open
+on the final day.** Five years and 140 round trips produced a realised result of
+−45.33 on 1,000.
+
+Per-trade expectancy confirms it directly:
+
+```
+win rate 36.4%   winners +16.36%   losers −11.09%
+0.364 x 16.36 + 0.636 x (−11.09) = −1.10% per trade
+```
+
+The tiered take-profit is doing real work — 52 of 140 trades reached at least the +15%
+tier, booking +782 — and the stop-loss exits give it all back.
+
+## Structural properties the run exposed
+
+- **Only two exit reasons exist:** `stop_loss` 88, `trailing_stop` 52. Predicted in
+  advance from reading the code, confirmed here. With the judgment layer removed there
+  is no other way out, and no time-based exit.
+- **The system is structurally half-invested.** 46.5% mean exposure at `high`, with
+  **17.8% of days holding nothing at all** and only 25.9% holding the full four. The
+  binding constraint is 4 slots x 20%, then the re-entry lock (1,271 blocks),
+  `entry_extension` (486) and `entry_price_gap` (342).
+- **Smaller positions performed better.** `medium` beat `high` on return (+9.61% vs
+  +5.49%) *and* on drawdown (−24.59% vs −40.05%). If selection carried an edge,
+  concentrating into it should help. It hurt.
+- **Worse return and worse risk.** −40.05% drawdown against SPY's roughly −24% over
+  the same window.
+
+## What this does NOT say
+
+It does **not** say the LLM adds nothing. Claude's `direction` and `conviction` calls
+were never measured and cannot be, for the three reasons registered above. This run
+measures the foundation those calls sit on.
+
+What it does establish is the size of the claim. The live system is mechanical layer
+**plus** LLM selection. The mechanical layer alone, with a hindsight-selected universe
+and zero commission, returned +5.49% while SPY returned +85.55%. For the full system
+to beat SPY, **Claude's stock picking must supply the entire ~74-point gap** — against
+a −1.10% per-trade expectancy it has to overcome first.
+
+The evidence offered for that is eight live weeks containing at least three different
+rule sets, with no drawdown reported and one name (GitLab) credited for the largest
+gains in two separate weeks.
+
+## Limitations, stated against our own result
+
+Honesty runs both directions, so these cut toward the strategy:
+
+1. **Idle cash earned nothing.** At ~53% idle over five years, T-bills at prevailing
+   rates would add very roughly +8% total. Real, and nowhere near a 74-point gap.
+2. **Universe is our proxy, not his watchlist.** `UNIVERSE_B` midcap_98 stands in for
+   the 2B–50B market-cap band, which needs point-in-time shares outstanding we do not
+   have. His watchlist is hand-picked — itself unmeasured judgment, so substituting a
+   list is not obviously harsher.
+3. **Stops fill at the close**, not intraday. Real fills would differ in both
+   directions.
+4. **Universe bias favours the strategy** and it still failed, which is the asymmetry
+   registered before the run.
+
+## Bottom line
+
+The rules are well engineered — deterministic, documented, genuinely better than Ares
+in two specific respects (the trail engages only after +15%, so it cannot trail into a
+loss; take-profit is tiered rather than a single scale). **Good engineering is not an
+edge.** On five years of history the mechanical layer is a −1.10%-per-trade system
+that finished flat on realised P&L with a −40% drawdown.
+
+**Do not fund.** Per the pre-registered rule, and per the same bar Ares failed.
