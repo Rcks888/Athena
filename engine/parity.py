@@ -44,8 +44,15 @@ ENGINE_DIR = Path(__file__).parent
 # of the hash: Ares' files are CRLF and the copy must preserve them byte for byte.
 LIVE_SIGNALS_MD5 = "da2ba2596cf43f6405dfd4521824c33d"
 
+# md5 of Ares/engine/exit_policy.py as vendored on 2026-09-25. Block A step 2.
+# Exits were the last parallel reimplementation: _decide_exit re-expressed live's
+# chain by hand and stayed correct only because someone kept checking. Same failure
+# shape as the dead signals.py copy this file was written for.
+LIVE_EXIT_POLICY_MD5 = "5357ff32f06bbe687788a0742407f76f"
+
 # Where live lives, for the operator-facing message. Athena must never write here.
 ARES_SIGNALS_HINT = "~/Olympus/Ares/engine/signals.py"
+ARES_EXIT_POLICY_HINT = "~/Olympus/Ares/engine/exit_policy.py"
 
 # ---------------------------------------------------------------------------
 # DECLARED, SCOPED DIVERGENCE from live — engine/indicators.py
@@ -133,5 +140,28 @@ def assert_signals_parity():
         )
     return actual
 
+def assert_exit_policy_parity():
+    """Fail loudly if engine/exit_policy.py is not the recorded live copy."""
+    path = ENGINE_DIR / "exit_policy.py"
+    if not path.exists():
+        raise ParityDrift(
+            f"engine/exit_policy.py is missing. Re-vendor it:\n"
+            f"    cp {ARES_EXIT_POLICY_HINT} engine/exit_policy.py"
+        )
+    actual = _md5(path)
+    if actual != LIVE_EXIT_POLICY_MD5:
+        raise ParityDrift(
+            f"engine/exit_policy.py has drifted from the recorded live copy.\n"
+            f"  expected md5 {LIVE_EXIT_POLICY_MD5}\n"
+            f"  actual   md5 {actual}\n\n"
+            f"Exit rules define the Block B label. A drifted copy means every label\n"
+            f"describes an exit policy the live system does not implement. Re-vendor\n"
+            f"and treat the result as a measurement of a different system:\n"
+            f"    cp {ARES_EXIT_POLICY_HINT} engine/exit_policy.py\n"
+            f"    # then update LIVE_EXIT_POLICY_MD5 in engine/parity.py"
+        )
+    return actual
+
 # Asserted at import so no code path can reach a simulation without it holding.
 assert_signals_parity()
+assert_exit_policy_parity()

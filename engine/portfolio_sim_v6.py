@@ -55,6 +55,7 @@ import pandas as pd
 
 from engine import active_config
 from engine.data_feed import load_universe
+from engine import exit_policy
 from engine.indicators import add_indicators
 from engine.live_adapter import (
     assert_frame_contract, evaluate_entry, stdev_at,
@@ -198,23 +199,23 @@ def _decide_exit(row, pos, params):
       target bar never evaluates an exit at all. The caller enforces that.
 
     Returns an exit reason, or None.
+
+    Block A step 2: this chain now DELEGATES to the canonical exit module
+    (Ares/engine/exit_policy.py, vendored here and md5-pinned in engine/parity.py).
+    Until now it was a hand-written parallel implementation - correct, but correct
+    only because someone kept re-checking it against tracker.py. That is the same
+    failure shape as the dead signals.py copy parity.py was written to prevent.
+
+    Athena supplies daily-bar prices and applies its own next-open fill model, so
+    only the reason is used; the module's suggested exit price is discarded. No
+    holding_days is passed, so the module's time stop stays inert and Run A' is
+    reproduced exactly.
     """
     price = float(row['Close'])
     rsi = float(row['rsi']) if not pd.isna(row['rsi']) else 50.0
-    effective_stop = max(pos['stop_loss'], pos['trailing_stop'])
-
-    if price <= effective_stop:
-        return ('trailing_stop' if pos['trailing_stop'] > pos['stop_loss']
-                else 'stop_loss')
-    elif rsi > params.get('rsi_extreme_high', 90):
-        return 'emotional_extreme'
-    elif bool(row.get('bearish_div', False)):
-        if pos['strategy'] in ('momentum_breakout', 'trend_continuation'):
-            return 'bearish_divergence'
-        return None          # swallowed, exactly as live swallows it
-    elif pos['strategy'] == 'mean_reversion' and rsi > 70:
-        return 'mean_reversion_complete'
-    return None
+    reason, _suggested_price = exit_policy.decide_exit(
+        pos, price, rsi, bool(row.get('bearish_div', False)), params)
+    return reason
 
 def run_sim(symbols, start_date, end_date, params, label=""):
     """Portfolio simulation running live Ares' strategy code.
@@ -410,16 +411,16 @@ def run_sim(symbols, start_date, end_date, params, label=""):
             row = data[sym].loc[day]
             price = float(row['Close'])
 
-            if price > pos['peak_price']:
-                pos['peak_price'] = price
-                new_ts = price * (1 - params.get('trailing_stop_pct', 0.10))
-                if new_ts > pos['trailing_stop']:
-                    pos['trailing_stop'] = new_ts
+            # Peak ratchet and trail activation via the canonical module.
+            pos['_bar_date'] = day_str
+            exit_policy.update_peak(pos, price, params)
 
             # Scale-out FIRST, and it short-circuits the exit chain, exactly as
             # live's `continue` does. This is the ordering that protects winners.
-            if (scale_out and not pos['scaled_out'] and pos['take_profit'] > 0
-                    and price >= pos['take_profit']):
+            # The `not scaled_out` guard stays here because Athena defers the fill
+            # to the next bar, so tiers_hit has not incremented at decision time.
+            if (scale_out and not pos['scaled_out']
+                    and exit_policy.decide_scale_out(pos, price, params)):
                 pending_scaleouts.append({'symbol': sym})
                 continue
 
