@@ -1,0 +1,86 @@
+{
+  "A": {
+    "parity": "PASS",
+    "n": 145,
+    "policies": {
+      "B": {
+        "n": 145,
+        "affected": 34,
+        "mean_delta_pp": 0.07337177030762472,
+        "median_delta_pp": 0.0,
+        "ci90": [
+          -0.49334129176424507,
+          0.6571599085792292
+        ],
+        "required_per_affected_pp": 2.1323529411764706,
+        "verdict": "FAILS",
+        "classification": {
+          "hit_initial_stop": 14,
+          "recovered_insufficiently": 12,
+          "reached_tier": 6,
+          "recovered_and_improved": 2
+        }
+      },
+      "D": {
+        "n": 145,
+        "affected": 24,
+        "mean_delta_pp": 0.21129555472314057,
+        "median_delta_pp": 0.0,
+        "ci90": [
+          -0.03940703737655615,
+          0.4789005008034594
+        ],
+        "required_per_affected_pp": 3.0208333333333335,
+        "verdict": "FAILS",
+        "classification": {
+          "hit_initial_stop": 12,
+          "recovered_and_improved": 6,
+          "recovered_insufficiently": 4,
+          "reached_tier": 2
+        }
+      }
+    }
+  },
+  "B": {
+    "parity": "PASS",
+    "n": 148,
+    "policies": {
+      "B": {
+        "n": 148,
+        "affected": 44,
+        "mean_delta_pp": -0.014702001564261475,
+        "median_delta_pp": 0.0,
+        "ci90": [
+          -0.8529754631076001,
+          0.9478641485758016
+        ],
+        "required_per_affected_pp": 1.6818181818181819,
+        "verdict": "FAILS",
+        "classification": {
+          "hit_initial_stop": 21,
+          "recovered_insufficiently": 12,
+          "reached_tier": 10,
+          "recovered_and_improved": 1
+        }
+      },
+      "D": {
+        "n": 148,
+        "affected": 29,
+        "mean_delta_pp": -0.018925602215926655,
+        "median_delta_pp": 0.0,
+        "ci90": [
+          -0.4813196812187789,
+          0.5482632902041888
+        ],
+        "required_per_affected_pp": 2.5517241379310347,
+        "verdict": "FAILS",
+        "classification": {
+          "hit_initial_stop": 18,
+          "recovered_insufficiently": 5,
+          "recovered_and_improved": 3,
+          "reached_tier": 3
+        }
+      }
+    }
+  }
+}
