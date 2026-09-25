@@ -298,7 +298,10 @@ def run_sim(symbols, start_date, end_date, params, label=""):
             c['commissions_paid'] += commission
             pos['commission_paid'] += commission
             pos['shares'] -= shares
-            pos['scaled_out'] = True
+            # Sets scaled_out and freezes peak_before_first_tier, so a tiered
+            # policy's giveback is measured against the peak it had while fully
+            # sized rather than against the surviving remainder.
+            exit_policy.record_tier_fill(pos, px, day_str)
             pos['scale_out_date'] = day_str
             pos['scale_out_price'] = px
             pos['scale_out_shares'] = shares
@@ -585,7 +588,8 @@ def _book(pos, exit_date, exit_price, reason, exit_proceeds):
     pnl = returned - invested
     entry_dt = datetime.strptime(pos['entry_date'], "%Y-%m-%d")
     exit_dt = datetime.strptime(exit_date, "%Y-%m-%d")
-    return {
+    gross_basis = pos['original_shares'] * pos['entry_price']
+    record = {
         'symbol': pos['symbol'], 'strategy': pos['strategy'],
         'trigger': pos['trigger'], 'confluence': pos['confluence'],
         'signal_date': pos['signal_date'], 'entry_date': pos['entry_date'],
@@ -622,6 +626,15 @@ def _book(pos, exit_date, exit_price, reason, exit_proceeds):
         'win': 1 if pnl > 0 else 0,
         'win_before_commission': 1 if (pnl + pos['commission_paid']) > 0 else 0,
     }
+    # Block A instrumentation. None of these fields existed in saved output, so
+    # the pre-registered exit-quality metrics - retained MFE, giveback from peak,
+    # profitable trades converted to losses - were uncomputable from results/*.csv.
+    record.update(exit_policy.instrument_close(
+        pos, exit_price,
+        gross_price_return_pct=(pnl + pos['commission_paid']) / gross_basis * 100,
+        net_return_pct=pnl / invested * 100,
+    ))
+    return record
 
 def reconcile(closed, open_positions, starting_capital, final_cash, open_value,
               tol=0.01):

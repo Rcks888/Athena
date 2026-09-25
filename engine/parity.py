@@ -48,7 +48,7 @@ LIVE_SIGNALS_MD5 = "da2ba2596cf43f6405dfd4521824c33d"
 # Exits were the last parallel reimplementation: _decide_exit re-expressed live's
 # chain by hand and stayed correct only because someone kept checking. Same failure
 # shape as the dead signals.py copy this file was written for.
-LIVE_EXIT_POLICY_MD5 = "5357ff32f06bbe687788a0742407f76f"
+LIVE_EXIT_POLICY_MD5 = "1efad9500d86d4acbb9aaddc24b3cdb4"
 
 # Where live lives, for the operator-facing message. Athena must never write here.
 ARES_SIGNALS_HINT = "~/Olympus/Ares/engine/signals.py"
