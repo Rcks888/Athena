@@ -36,9 +36,10 @@ Equivalence is asserted per transition, never on final P&L.
 | Historical Run A' paths | 250 | 4,690 |
 
 Coverage gaps, reported not hidden: 0 symbols absent from the 220-symbol snapshot;
-**43 entries skipped for insufficient warm-up** (fewer than 100 bars precede entry,
-so the 50-bar indicator warm-ups cannot be satisfied — the same contract
-`prepare(min_bars=100)` enforces).
+**43 entries classified `UNTESTED_INSUFFICIENT_WARMUP`** — not passed, not failed.
+Cause analysis and live-reachability verdict in
+`Ares/TRACKER_MIGRATION_PLAN.md`. Historical decision coverage is therefore
+**250 of 293 paths**, with **43 of 43 excluded paths classified and explained**.
 
 Boundary fixtures probe each threshold from below, at, and above, on **both**
 strategies: TP at +10% reversal and +18% momentum; the stop; trailing-stop versus
@@ -69,9 +70,16 @@ a widened tolerance, but re-derived to 1e-9:
 `instrument_close` (reporting) and keeps full precision in `update_peak`.
 
 **Rounded state feeds the next bar**, so this is a genuine contract question, not
-cosmetic. In this population it never changed an outcome — but that is an empirical
-finding over 4,730 bars, not a proof. A future path could sit within a cent of a
-threshold.
+cosmetic.
+
+Correct wording, which is stronger and more accurate than claiming equivalence:
+
+> **No decision-changing differences were detected within the tested population.
+> Full-precision and tracker-rounded state are not universally equivalent by
+> construction.**
+
+A future price could land close enough to a threshold for the difference to change a
+decision. 4,730 bars is evidence, not proof.
 
 **Which side is correct is NOT decided here.** `tracker.py` is live, so equivalence
 means *the module reproduces tracker's current behaviour*. If tracker's rounding is
