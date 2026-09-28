@@ -1,0 +1,4099 @@
+{
+  "phase": "tracker_migration_phase_0",
+  "authorizes_swap": false,
+  "tracker_modified": false,
+  "dollar_tolerance": 0.0001,
+  "rounding_note": "tracker stores 2dp-rounded peak_price, trailing_stop, shares and scale_out_price; the canonical module keeps full precision. Rounded state feeds the next bar, so this is a contract difference to resolve before the swap, not a cosmetic one.",
+  "populations": {
+    "BOUNDARY FIXTURES": {
+      "cases": 20,
+      "bars": 40
+    },
+    "HISTORICAL PATHS": {
+      "cases": 250,
+      "bars": 4690
+    }
+  },
+  "snapshot_missing_symbols": [],
+  "skipped_insufficient_warmup": [
+    "AMT@2021-11-16(39)",
+    "AR@2022-02-03(93)",
+    "ATI@2022-01-21(84)",
+    "ATI@2022-02-04(94)",
+    "BILL@2021-12-07(53)",
+    "BIRK@2024-01-18(67)",
+    "BMY@2021-12-01(49)",
+    "BRK-B@2021-12-20(62)",
+    "BROS@2022-02-08(96)",
+    "CAT@2022-01-20(83)",
+    "CMC@2021-12-16(60)",
+    "CVX@2022-01-28(89)",
+    "DAL@2022-01-14(80)",
+    "DASH@2021-10-28(26)",
+    "DKNG@2021-12-02(50)",
+    "DKNG@2021-12-08(54)",
+    "DUOL@2021-12-01(49)",
+    "FCX@2022-01-13(79)",
+    "FUN@2021-12-16(60)",
+    "FUN@2022-02-01(91)",
+    "FVRR@2021-11-09(34)",
+    "GILD@2021-11-01(28)",
+    "HOOD@2021-12-02(50)",
+    "HOOD@2021-12-07(53)",
+    "IOT@2022-01-20(24)",
+    "LMT@2022-01-13(79)",
+    "NUE@2021-12-20(62)",
+    "PKX@2021-11-11(36)",
+    "REGN@2021-12-14(58)",
+    "RS@2021-12-22(64)",
+    "SLB@2022-01-31(90)",
+    "TECK@2022-01-21(84)",
+    "TGT@2021-12-21(63)",
+    "TOST@2021-11-24(45)",
+    "TOST@2021-12-03(51)",
+    "UBER@2021-12-06(52)",
+    "VALE@2021-10-22(22)",
+    "VALE@2021-11-03(30)",
+    "VALE@2021-11-19(42)",
+    "VALE@2022-01-25(86)",
+    "VEEV@2021-12-03(51)",
+    "XOM@2022-01-25(86)",
+    "ZM@2021-11-24(45)"
+  ],
+  "excluded_fields": [
+    "post_mortem",
+    "shadow",
+    "sample_phase",
+    "contaminated",
+    "contamination_reasons",
+    "scale_out_pnl",
+    "scale_out_pnl_pct",
+    "scale_out_commission",
+    "total_commission",
+    "pnl",
+    "pnl_pct",
+    "pnl_after_costs",
+    "pnl_remaining",
+    "exit_slippage",
+    "holding_days"
+  ],
+  "compared_fields": [
+    "peak_price",
+    "trailing_stop",
+    "shares",
+    "scaled_out",
+    "scale_out_price",
+    "scale_out_shares",
+    "scale_out_date",
+    "status",
+    "exit_reason",
+    "exit_price",
+    "exit_date"
+  ],
+  "mismatch_counts": {
+    "tracker_2dp_rounding": 8600,
+    "tracker_rounding_compounded": 16
+  },
+  "mismatches": [
+    {
+      "case": "tp_rev_just_below",
+      "bar": 110,
+      "field": "peak_price",
+      "tracker": 109.99,
+      "module": 109.989,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_rev_just_below",
+      "bar": 110,
+      "field": "trailing_stop",
+      "tracker": 98.99,
+      "module": 98.99010000000001,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_rev_just_below",
+      "bar": 110,
+      "field": "exit_price",
+      "tracker": 109.88,
+      "module": 109.879011,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_rev_just_above",
+      "bar": 110,
+      "field": "peak_price",
+      "tracker": 110.01,
+      "module": 110.011,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_rev_just_above",
+      "bar": 110,
+      "field": "trailing_stop",
+      "tracker": 99.01,
+      "module": 99.0099,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_rev_just_above",
+      "bar": 110,
+      "field": "scale_out_price",
+      "tracker": 109.9,
+      "module": 109.900989,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_rev_just_above",
+      "bar": 111,
+      "field": "peak_price",
+      "tracker": 110.01,
+      "module": 110.011,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_rev_just_above",
+      "bar": 111,
+      "field": "trailing_stop",
+      "tracker": 99.01,
+      "module": 99.0099,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_rev_just_above",
+      "bar": 111,
+      "field": "scale_out_price",
+      "tracker": 109.9,
+      "module": 109.900989,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_rev_just_above",
+      "bar": 111,
+      "field": "exit_price",
+      "tracker": 109.9,
+      "module": 109.900989,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_below",
+      "bar": 110,
+      "field": "peak_price",
+      "tracker": 117.99,
+      "module": 117.9882,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_below",
+      "bar": 110,
+      "field": "trailing_stop",
+      "tracker": 106.19,
+      "module": 106.18938000000001,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_below",
+      "bar": 110,
+      "field": "exit_price",
+      "tracker": 117.87,
+      "module": 117.8702118,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_exact",
+      "bar": 110,
+      "field": "scale_out_price",
+      "tracker": 117.88,
+      "module": 117.882,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_exact",
+      "bar": 111,
+      "field": "scale_out_price",
+      "tracker": 117.88,
+      "module": 117.882,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_exact",
+      "bar": 111,
+      "field": "exit_price",
+      "tracker": 117.88,
+      "module": 117.882,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_above",
+      "bar": 110,
+      "field": "peak_price",
+      "tracker": 118.01,
+      "module": 118.0118,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_above",
+      "bar": 110,
+      "field": "trailing_stop",
+      "tracker": 106.21,
+      "module": 106.21061999999999,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_above",
+      "bar": 110,
+      "field": "scale_out_price",
+      "tracker": 117.89,
+      "module": 117.89378819999999,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_above",
+      "bar": 111,
+      "field": "peak_price",
+      "tracker": 118.01,
+      "module": 118.0118,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_above",
+      "bar": 111,
+      "field": "trailing_stop",
+      "tracker": 106.21,
+      "module": 106.21061999999999,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_above",
+      "bar": 111,
+      "field": "scale_out_price",
+      "tracker": 117.89,
+      "module": 117.89378819999999,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "tp_mom_just_above",
+      "bar": 111,
+      "field": "exit_price",
+      "tracker": 117.89,
+      "module": 117.89378819999999,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "trail_above_stop",
+      "bar": 111,
+      "field": "exit_price",
+      "tracker": 94.41,
+      "module": 94.4055,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "peak_below_1111",
+      "bar": 111,
+      "field": "exit_price",
+      "tracker": 99.8,
+      "module": 99.8001,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "peak_at_1111",
+      "bar": 110,
+      "field": "trailing_stop",
+      "tracker": 100.0,
+      "module": 99.999,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "peak_at_1111",
+      "bar": 111,
+      "field": "trailing_stop",
+      "tracker": 100.0,
+      "module": 99.999,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "peak_at_1111",
+      "bar": 111,
+      "field": "exit_price",
+      "tracker": 99.9,
+      "module": 99.899001,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "scaled_then_trail_exit",
+      "bar": 111,
+      "field": "exit_price",
+      "tracker": 134.87,
+      "module": 134.865,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "preset_scaled_out",
+      "bar": 110,
+      "field": "exit_price",
+      "tracker": 124.88,
+      "module": 124.875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "missing_bar",
+      "bar": 111,
+      "field": "exit_price",
+      "tracker": 94.41,
+      "module": 94.4055,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "rev_complete_rsi",
+      "bar": 112,
+      "field": "exit_price",
+      "tracker": 102.9,
+      "module": 102.897,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NEE_2022-04-29",
+      "bar": 153,
+      "field": "exit_price",
+      "tracker": 62.22,
+      "module": 62.21627145,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 156,
+      "field": "peak_price",
+      "tracker": 178.22,
+      "module": 178.22268676757812,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 157,
+      "field": "peak_price",
+      "tracker": 178.22,
+      "module": 178.22268676757812,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 158,
+      "field": "peak_price",
+      "tracker": 178.22,
+      "module": 178.22268676757812,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 159,
+      "field": "peak_price",
+      "tracker": 178.22,
+      "module": 178.22268676757812,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 160,
+      "field": "peak_price",
+      "tracker": 178.22,
+      "module": 178.22268676757812,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 161,
+      "field": "peak_price",
+      "tracker": 178.22,
+      "module": 178.22268676757812,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 162,
+      "field": "peak_price",
+      "tracker": 178.22,
+      "module": 178.22268676757812,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 163,
+      "field": "peak_price",
+      "tracker": 178.22,
+      "module": 178.22268676757812,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 164,
+      "field": "peak_price",
+      "tracker": 180.21,
+      "module": 180.2143096923828,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 165,
+      "field": "peak_price",
+      "tracker": 180.21,
+      "module": 180.2143096923828,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 166,
+      "field": "peak_price",
+      "tracker": 180.21,
+      "module": 180.2143096923828,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 167,
+      "field": "peak_price",
+      "tracker": 180.21,
+      "module": 180.2143096923828,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_HON_2022-05-04",
+      "bar": 167,
+      "field": "exit_price",
+      "tracker": 172.61,
+      "module": 172.614994218,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 155,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 155,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 156,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 156,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 157,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 157,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 158,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 158,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 159,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 159,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 160,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 160,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 161,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 161,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 162,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 162,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 163,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 163,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 164,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 164,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 165,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 165,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 166,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 166,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 167,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 167,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 168,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 168,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 169,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 169,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 170,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 170,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 171,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 171,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 172,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 172,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 173,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 173,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 174,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 174,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 175,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 175,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 176,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 176,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 177,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 177,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 178,
+      "field": "peak_price",
+      "tracker": 271.07,
+      "module": 271.0719299316406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 178,
+      "field": "trailing_stop",
+      "tracker": 243.96,
+      "module": 243.96473693847656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SHW_2022-05-03",
+      "bar": 178,
+      "field": "exit_price",
+      "tracker": 266.34,
+      "module": 266.3362718811035,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 127,
+      "field": "peak_price",
+      "tracker": 70.28,
+      "module": 70.2804946899414,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 128,
+      "field": "peak_price",
+      "tracker": 71.09,
+      "module": 71.09335327148438,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 129,
+      "field": "peak_price",
+      "tracker": 71.09,
+      "module": 71.09335327148438,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 130,
+      "field": "peak_price",
+      "tracker": 71.29,
+      "module": 71.29437255859375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 131,
+      "field": "peak_price",
+      "tracker": 72.02,
+      "module": 72.01982879638672,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 132,
+      "field": "peak_price",
+      "tracker": 72.02,
+      "module": 72.01982879638672,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 133,
+      "field": "peak_price",
+      "tracker": 73.0,
+      "module": 72.99871826171875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 134,
+      "field": "peak_price",
+      "tracker": 73.0,
+      "module": 72.99871826171875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 135,
+      "field": "peak_price",
+      "tracker": 73.17,
+      "module": 73.17353057861328,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 136,
+      "field": "peak_price",
+      "tracker": 74.27,
+      "module": 74.26605987548828,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 137,
+      "field": "peak_price",
+      "tracker": 75.87,
+      "module": 75.86554718017578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 137,
+      "field": "trailing_stop",
+      "tracker": 68.28,
+      "module": 68.2789924621582,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 138,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 138,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 139,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 139,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 140,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 140,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 141,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 141,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 142,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 142,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 143,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 143,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 144,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 144,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 145,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 145,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 146,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 146,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 147,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 147,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 148,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 148,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 149,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 149,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 150,
+      "field": "peak_price",
+      "tracker": 76.63,
+      "module": 76.63467407226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 150,
+      "field": "trailing_stop",
+      "tracker": 68.97,
+      "module": 68.97120666503906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 151,
+      "field": "peak_price",
+      "tracker": 77.42,
+      "module": 77.42131805419922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 151,
+      "field": "trailing_stop",
+      "tracker": 69.68,
+      "module": 69.6791862487793,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 152,
+      "field": "peak_price",
+      "tracker": 77.52,
+      "module": 77.5174560546875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-03-21",
+      "bar": 152,
+      "field": "trailing_stop",
+      "tracker": 69.77,
+      "module": 69.76571044921876,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 170,
+      "field": "peak_price",
+      "tracker": 129.92,
+      "module": 129.91583251953125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 171,
+      "field": "peak_price",
+      "tracker": 131.05,
+      "module": 131.05210876464844,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 172,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 173,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 174,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 175,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 176,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 177,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 178,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 179,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 180,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 181,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 182,
+      "field": "peak_price",
+      "tracker": 133.06,
+      "module": 133.05616760253906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_PG_2022-05-24",
+      "bar": 182,
+      "field": "exit_price",
+      "tracker": 124.68,
+      "module": 124.67758761,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 190,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 191,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 192,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 193,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 194,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 195,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 196,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 197,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 198,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 199,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 200,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 201,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 202,
+      "field": "peak_price",
+      "tracker": 226.12,
+      "module": 226.1163024902344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_APD_2022-06-14",
+      "bar": 202,
+      "field": "exit_price",
+      "tracker": 208.3,
+      "module": 208.304501985,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 190,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 190,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 191,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 191,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 192,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 192,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 193,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 193,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 194,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 194,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 195,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 195,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 196,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 196,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 197,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 197,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 198,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 198,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 199,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 199,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 200,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 200,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 201,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 201,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 202,
+      "field": "peak_price",
+      "tracker": 179.42,
+      "module": 179.4180908203125,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 202,
+      "field": "trailing_stop",
+      "tracker": 161.48,
+      "module": 161.47628173828124,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_FDX_2022-06-21",
+      "bar": 202,
+      "field": "exit_price",
+      "tracker": 161.32,
+      "module": 161.31480545654296,
+      "kind": "tracker_rounding_compounded"
+    },
+    {
+      "case": "hist_A_MRK_2022-06-27",
+      "bar": 200,
+      "field": "peak_price",
+      "tracker": 83.1,
+      "module": 83.09528350830078,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-06-27",
+      "bar": 201,
+      "field": "peak_price",
+      "tracker": 83.1,
+      "module": 83.09528350830078,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-06-27",
+      "bar": 202,
+      "field": "peak_price",
+      "tracker": 83.1,
+      "module": 83.09528350830078,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-06-27",
+      "bar": 203,
+      "field": "peak_price",
+      "tracker": 83.1,
+      "module": 83.09528350830078,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-06-27",
+      "bar": 204,
+      "field": "peak_price",
+      "tracker": 83.68,
+      "module": 83.67684936523438,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MRK_2022-06-27",
+      "bar": 204,
+      "field": "exit_price",
+      "tracker": 83.59,
+      "module": 83.59317251586914,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 125,
+      "field": "peak_price",
+      "tracker": 154.17,
+      "module": 154.17373657226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 126,
+      "field": "peak_price",
+      "tracker": 154.17,
+      "module": 154.17373657226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 127,
+      "field": "peak_price",
+      "tracker": 154.39,
+      "module": 154.3852081298828,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 128,
+      "field": "peak_price",
+      "tracker": 155.87,
+      "module": 155.86524963378906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 129,
+      "field": "peak_price",
+      "tracker": 156.67,
+      "module": 156.6669464111328,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 130,
+      "field": "peak_price",
+      "tracker": 156.67,
+      "module": 156.6669464111328,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 131,
+      "field": "peak_price",
+      "tracker": 158.22,
+      "module": 158.217529296875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 132,
+      "field": "peak_price",
+      "tracker": 158.22,
+      "module": 158.217529296875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 133,
+      "field": "peak_price",
+      "tracker": 158.22,
+      "module": 158.217529296875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 134,
+      "field": "peak_price",
+      "tracker": 158.22,
+      "module": 158.217529296875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 135,
+      "field": "peak_price",
+      "tracker": 158.22,
+      "module": 158.217529296875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 136,
+      "field": "peak_price",
+      "tracker": 160.54,
+      "module": 160.54335021972656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 137,
+      "field": "peak_price",
+      "tracker": 160.54,
+      "module": 160.54335021972656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 138,
+      "field": "peak_price",
+      "tracker": 160.54,
+      "module": 160.54335021972656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 139,
+      "field": "peak_price",
+      "tracker": 160.54,
+      "module": 160.54335021972656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 140,
+      "field": "peak_price",
+      "tracker": 160.54,
+      "module": 160.54335021972656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 141,
+      "field": "peak_price",
+      "tracker": 160.54,
+      "module": 160.54335021972656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 142,
+      "field": "peak_price",
+      "tracker": 160.54,
+      "module": 160.54335021972656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 143,
+      "field": "peak_price",
+      "tracker": 160.54,
+      "module": 160.54335021972656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 144,
+      "field": "peak_price",
+      "tracker": 161.29,
+      "module": 161.29217529296875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 145,
+      "field": "peak_price",
+      "tracker": 162.01,
+      "module": 162.00576782226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 146,
+      "field": "peak_price",
+      "tracker": 162.01,
+      "module": 162.00576782226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 147,
+      "field": "peak_price",
+      "tracker": 162.01,
+      "module": 162.00576782226562,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 148,
+      "field": "peak_price",
+      "tracker": 163.87,
+      "module": 163.8734893798828,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_JNJ_2022-03-21",
+      "bar": 148,
+      "field": "exit_price",
+      "tracker": 163.71,
+      "module": 163.70961589050293,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 187,
+      "field": "peak_price",
+      "tracker": 57.64,
+      "module": 57.63685989379883,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 188,
+      "field": "peak_price",
+      "tracker": 58.1,
+      "module": 58.10034942626953,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 189,
+      "field": "peak_price",
+      "tracker": 59.47,
+      "module": 59.465091705322266,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 190,
+      "field": "peak_price",
+      "tracker": 59.94,
+      "module": 59.93717956542969,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 191,
+      "field": "peak_price",
+      "tracker": 60.4,
+      "module": 60.40067672729492,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 192,
+      "field": "peak_price",
+      "tracker": 60.62,
+      "module": 60.6152572631836,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 193,
+      "field": "peak_price",
+      "tracker": 60.66,
+      "module": 60.65817260742188,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 194,
+      "field": "peak_price",
+      "tracker": 61.21,
+      "module": 61.20750045776367,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 195,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 195,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 196,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 196,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 197,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 197,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 198,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 198,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 199,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 199,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 200,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 200,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 201,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 201,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 202,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 202,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 203,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 203,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 204,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 204,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 205,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 205,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 206,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 206,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 207,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 207,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 208,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 208,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 209,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 209,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 210,
+      "field": "peak_price",
+      "tracker": 62.78,
+      "module": 62.77825164794922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 210,
+      "field": "trailing_stop",
+      "tracker": 56.5,
+      "module": 56.5004264831543,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 211,
+      "field": "peak_price",
+      "tracker": 63.1,
+      "module": 63.095829010009766,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 211,
+      "field": "trailing_stop",
+      "tracker": 56.79,
+      "module": 56.78624610900879,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 212,
+      "field": "peak_price",
+      "tracker": 63.1,
+      "module": 63.095829010009766,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 212,
+      "field": "trailing_stop",
+      "tracker": 56.79,
+      "module": 56.78624610900879,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 213,
+      "field": "peak_price",
+      "tracker": 65.1,
+      "module": 65.09573364257812,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 213,
+      "field": "trailing_stop",
+      "tracker": 58.59,
+      "module": 58.586160278320314,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 213,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 213,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 213,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 214,
+      "field": "peak_price",
+      "tracker": 66.0,
+      "module": 65.99699401855469,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 214,
+      "field": "trailing_stop",
+      "tracker": 59.4,
+      "module": 59.39729461669922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 214,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 214,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 214,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 215,
+      "field": "peak_price",
+      "tracker": 66.0,
+      "module": 65.99699401855469,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 215,
+      "field": "trailing_stop",
+      "tracker": 59.4,
+      "module": 59.39729461669922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 215,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 215,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 215,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 216,
+      "field": "peak_price",
+      "tracker": 66.0,
+      "module": 65.99699401855469,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 216,
+      "field": "trailing_stop",
+      "tracker": 59.4,
+      "module": 59.39729461669922,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 216,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 216,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 216,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 217,
+      "field": "peak_price",
+      "tracker": 66.31,
+      "module": 66.31455993652344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 217,
+      "field": "trailing_stop",
+      "tracker": 59.68,
+      "module": 59.68310394287109,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 217,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 217,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 217,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 218,
+      "field": "peak_price",
+      "tracker": 66.92,
+      "module": 66.92398071289062,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 218,
+      "field": "trailing_stop",
+      "tracker": 60.23,
+      "module": 60.23158264160156,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 218,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 218,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 218,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 219,
+      "field": "peak_price",
+      "tracker": 66.92,
+      "module": 66.92398071289062,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 219,
+      "field": "trailing_stop",
+      "tracker": 60.23,
+      "module": 60.23158264160156,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 219,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 219,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 219,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 220,
+      "field": "peak_price",
+      "tracker": 66.92,
+      "module": 66.92398071289062,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 220,
+      "field": "trailing_stop",
+      "tracker": 60.23,
+      "module": 60.23158264160156,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 220,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 220,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 220,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 221,
+      "field": "peak_price",
+      "tracker": 67.16,
+      "module": 67.164306640625,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 221,
+      "field": "trailing_stop",
+      "tracker": 60.45,
+      "module": 60.4478759765625,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 221,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 221,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 221,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 222,
+      "field": "peak_price",
+      "tracker": 67.2,
+      "module": 67.19864654541016,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 222,
+      "field": "trailing_stop",
+      "tracker": 60.48,
+      "module": 60.47878189086914,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 222,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 222,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 222,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 223,
+      "field": "peak_price",
+      "tracker": 67.2,
+      "module": 67.19864654541016,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 223,
+      "field": "trailing_stop",
+      "tracker": 60.48,
+      "module": 60.47878189086914,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 223,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 223,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 223,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 224,
+      "field": "peak_price",
+      "tracker": 67.64,
+      "module": 67.64320373535156,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 224,
+      "field": "trailing_stop",
+      "tracker": 60.88,
+      "module": 60.878883361816406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 224,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 224,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 224,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 225,
+      "field": "peak_price",
+      "tracker": 67.86,
+      "module": 67.85967254638672,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 225,
+      "field": "trailing_stop",
+      "tracker": 61.07,
+      "module": 61.07370529174805,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 225,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 225,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 225,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 226,
+      "field": "peak_price",
+      "tracker": 68.47,
+      "module": 68.46578216552734,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 226,
+      "field": "trailing_stop",
+      "tracker": 61.62,
+      "module": 61.61920394897461,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 226,
+      "field": "shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 226,
+      "field": "scale_out_price",
+      "tracker": 65.03,
+      "module": 65.03063790893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 226,
+      "field": "scale_out_shares",
+      "tracker": 1.29,
+      "module": 1.2949486,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-06-15",
+      "bar": 226,
+      "field": "exit_price",
+      "tracker": 68.4,
+      "module": 68.39731638336181,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SNPS_2022-08-18",
+      "bar": 229,
+      "field": "exit_price",
+      "tracker": 374.05,
+      "module": 374.049051525,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 212,
+      "field": "peak_price",
+      "tracker": 22.67,
+      "module": 22.674999237060547,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 213,
+      "field": "peak_price",
+      "tracker": 22.67,
+      "module": 22.674999237060547,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 214,
+      "field": "peak_price",
+      "tracker": 22.67,
+      "module": 22.674999237060547,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 215,
+      "field": "peak_price",
+      "tracker": 22.67,
+      "module": 22.674999237060547,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 216,
+      "field": "peak_price",
+      "tracker": 22.67,
+      "module": 22.674999237060547,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 217,
+      "field": "peak_price",
+      "tracker": 22.67,
+      "module": 22.674999237060547,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 218,
+      "field": "peak_price",
+      "tracker": 22.99,
+      "module": 22.99099922180176,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 218,
+      "field": "trailing_stop",
+      "tracker": 20.69,
+      "module": 20.691899299621586,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 219,
+      "field": "peak_price",
+      "tracker": 22.99,
+      "module": 22.99099922180176,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 219,
+      "field": "trailing_stop",
+      "tracker": 20.69,
+      "module": 20.691899299621586,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 220,
+      "field": "peak_price",
+      "tracker": 23.35,
+      "module": 23.349000930786133,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 220,
+      "field": "trailing_stop",
+      "tracker": 21.01,
+      "module": 21.01410083770752,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 221,
+      "field": "peak_price",
+      "tracker": 23.35,
+      "module": 23.349000930786133,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 221,
+      "field": "trailing_stop",
+      "tracker": 21.01,
+      "module": 21.01410083770752,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 222,
+      "field": "peak_price",
+      "tracker": 24.41,
+      "module": 24.410999298095703,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 222,
+      "field": "trailing_stop",
+      "tracker": 21.97,
+      "module": 21.969899368286132,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 223,
+      "field": "peak_price",
+      "tracker": 24.41,
+      "module": 24.410999298095703,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 223,
+      "field": "trailing_stop",
+      "tracker": 21.97,
+      "module": 21.969899368286132,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 224,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 225,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 226,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 227,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 228,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 229,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 230,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 231,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 232,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 233,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 234,
+      "field": "trailing_stop",
+      "tracker": 22.44,
+      "module": 22.437000274658203,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_NFLX_2022-07-22",
+      "bar": 234,
+      "field": "exit_price",
+      "tracker": 22.42,
+      "module": 22.414563274383546,
+      "kind": "tracker_rounding_compounded"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 211,
+      "field": "peak_price",
+      "tracker": 34.37,
+      "module": 34.369483947753906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 212,
+      "field": "peak_price",
+      "tracker": 34.37,
+      "module": 34.369483947753906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 213,
+      "field": "peak_price",
+      "tracker": 34.85,
+      "module": 34.85151290893555,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 214,
+      "field": "peak_price",
+      "tracker": 35.34,
+      "module": 35.341190338134766,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 215,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 216,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 217,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 218,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 219,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 220,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 221,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 222,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 223,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 224,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 225,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 226,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 227,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 228,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 229,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 230,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 231,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 232,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 233,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 234,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 235,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 236,
+      "field": "peak_price",
+      "tracker": 35.39,
+      "module": 35.39475631713867,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_VZ_2022-07-25",
+      "bar": 236,
+      "field": "exit_price",
+      "tracker": 32.7,
+      "module": 32.699896371,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 212,
+      "field": "peak_price",
+      "tracker": 243.07,
+      "module": 243.0680084228516,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 213,
+      "field": "peak_price",
+      "tracker": 250.84,
+      "module": 250.8447723388672,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 214,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 215,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 216,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 217,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 218,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 219,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 220,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 221,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 222,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 223,
+      "field": "trailing_stop",
+      "tracker": 227.68,
+      "module": 227.68192749023436,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 224,
+      "field": "peak_price",
+      "tracker": 258.43,
+      "module": 258.4305725097656,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 224,
+      "field": "trailing_stop",
+      "tracker": 232.59,
+      "module": 232.58751525878907,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 225,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 225,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 226,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 226,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 227,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 227,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 228,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 228,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 229,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 229,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 230,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 230,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 231,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 231,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 232,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 232,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 233,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 233,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 234,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 234,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 235,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 235,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 236,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 236,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 237,
+      "field": "peak_price",
+      "tracker": 262.42,
+      "module": 262.4231872558594,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 237,
+      "field": "trailing_stop",
+      "tracker": 236.18,
+      "module": 236.18086853027344,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DHR_2022-07-22",
+      "bar": 237,
+      "field": "exit_price",
+      "tracker": 235.94,
+      "module": 235.94468766174316,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 226,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 227,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 228,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 229,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 230,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 231,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 232,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 233,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 234,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 235,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 236,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 237,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 238,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 239,
+      "field": "peak_price",
+      "tracker": 72.96,
+      "module": 72.95587921142578,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SCHW_2022-08-15",
+      "bar": 239,
+      "field": "exit_price",
+      "tracker": 66.49,
+      "module": 66.487790655,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 232,
+      "field": "peak_price",
+      "tracker": 361.51,
+      "module": 361.5083618164063,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 233,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 234,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 235,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 236,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 237,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 238,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 239,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 240,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 241,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 242,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 243,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 244,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 245,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 246,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 247,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 248,
+      "field": "peak_price",
+      "tracker": 367.93,
+      "module": 367.92572021484375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_DE_2022-08-23",
+      "bar": 248,
+      "field": "exit_price",
+      "tracker": 339.1,
+      "module": 339.09967188900004,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 239,
+      "field": "peak_price",
+      "tracker": 91.22,
+      "module": 91.22364807128906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 240,
+      "field": "peak_price",
+      "tracker": 91.22,
+      "module": 91.22364807128906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 241,
+      "field": "peak_price",
+      "tracker": 91.22,
+      "module": 91.22364807128906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 242,
+      "field": "peak_price",
+      "tracker": 91.22,
+      "module": 91.22364807128906,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 243,
+      "field": "peak_price",
+      "tracker": 92.03,
+      "module": 92.03346252441406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 244,
+      "field": "peak_price",
+      "tracker": 92.03,
+      "module": 92.03346252441406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 245,
+      "field": "peak_price",
+      "tracker": 92.03,
+      "module": 92.03346252441406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 246,
+      "field": "peak_price",
+      "tracker": 92.03,
+      "module": 92.03346252441406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 247,
+      "field": "peak_price",
+      "tracker": 92.03,
+      "module": 92.03346252441406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 248,
+      "field": "peak_price",
+      "tracker": 92.03,
+      "module": 92.03346252441406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 249,
+      "field": "peak_price",
+      "tracker": 92.03,
+      "module": 92.03346252441406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 250,
+      "field": "peak_price",
+      "tracker": 92.03,
+      "module": 92.03346252441406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 251,
+      "field": "peak_price",
+      "tracker": 92.03,
+      "module": 92.03346252441406,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_MPC_2022-09-01",
+      "bar": 251,
+      "field": "exit_price",
+      "tracker": 87.76,
+      "module": 87.76209006,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SNOW_2022-08-30",
+      "bar": 244,
+      "field": "trailing_stop",
+      "tracker": 175.69,
+      "module": 175.6890060424805,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SNOW_2022-08-30",
+      "bar": 245,
+      "field": "trailing_stop",
+      "tracker": 175.69,
+      "module": 175.6890060424805,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SNOW_2022-08-30",
+      "bar": 246,
+      "field": "trailing_stop",
+      "tracker": 178.18,
+      "module": 178.18199615478514,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SNOW_2022-08-30",
+      "bar": 246,
+      "field": "exit_price",
+      "tracker": 197.78,
+      "module": 197.7820157318115,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 244,
+      "field": "trailing_stop",
+      "tracker": 317.47,
+      "module": 317.4659912109375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 245,
+      "field": "trailing_stop",
+      "tracker": 317.47,
+      "module": 317.4659912109375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 246,
+      "field": "trailing_stop",
+      "tracker": 317.47,
+      "module": 317.4659912109375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 247,
+      "field": "trailing_stop",
+      "tracker": 317.47,
+      "module": 317.4659912109375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 248,
+      "field": "trailing_stop",
+      "tracker": 317.47,
+      "module": 317.4659912109375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 249,
+      "field": "trailing_stop",
+      "tracker": 317.47,
+      "module": 317.4659912109375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 250,
+      "field": "trailing_stop",
+      "tracker": 317.47,
+      "module": 317.4659912109375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 251,
+      "field": "trailing_stop",
+      "tracker": 317.47,
+      "module": 317.4659912109375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 252,
+      "field": "trailing_stop",
+      "tracker": 317.47,
+      "module": 317.4659912109375,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_LULU_2022-09-08",
+      "bar": 252,
+      "field": "exit_price",
+      "tracker": 317.15,
+      "module": 317.14852521972654,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-09-30",
+      "bar": 260,
+      "field": "peak_price",
+      "tracker": 61.21,
+      "module": 61.20965576171875,
+      "kind": "tracker_2dp_rounding"
+    },
+    {
+      "case": "hist_A_SO_2022-09-30",
+      "bar": 261,
+      "field": "peak_price",
+      "tracker": 61.21,
+      "module": 61.20965576171875,
+      "kind": "tracker_2dp_rounding"
+    }
+  ]
+}
