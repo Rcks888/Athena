@@ -1,4 +1,21 @@
-# Block A stage 1 — status: RECONCILED
+# Block A stage 1 — status: RECONCILED, COMPLETE
+
+> ## INVALIDATED — pre-fix Policy B and D outputs
+>
+> Any Policy B or D figure produced **before** commit `61ecd22` (Ares) /
+> `1cb0091` (Athena) contained an unregistered mean-reversion take-profit change
+> and **must not be used for interpretation**. The defect altered the experiment's
+> treatment, not merely its reporting.
+>
+> Specifically superseded: mean paired deltas +0.4228 / -0.2460 / +0.3479 /
+> -0.0861 pp, affected counts 38 / 25 / 47 / 29, required hurdles +1.91 / +2.90 /
+> +1.57 / +2.55 pp, and the D / Universe A interval [+0.0640, +0.6436] that
+> excluded zero. Pre-fix values appear below **only** in the comparison table that
+> documents the correction, and are labelled as wrong there.
+>
+> **Policy A figures are NOT affected.** Gate 1 passed 293/293 both before and
+> after the fix; Policy A's code branch was never changed. `results/` on disk
+> holds post-fix values only, having been overwritten by the final run.
 
 Runner `run_exit_replay.py`. Outputs `results/block_a_stage1_paired.csv`,
 `results/block_a_stage1_summary.json`. Diagnostic `trace_mismatch.py`.
